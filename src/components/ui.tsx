@@ -75,6 +75,16 @@ export function Icon({ name, size = 24, label }: { name: keyof typeof paths | st
   );
 }
 
+// ---------- Sceau Cartel (marque des œuvres de la collection, toujours sur blanc) ----------
+export function SealMark({ size = 14, color = 'var(--carmine)', title }: { size?: number; color?: string; title?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 288 288" role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true} fill={color}>
+      <path d="M28 0H260A28 28 0 0 1 288 28V92H92V196H288V260A28 28 0 0 1 260 288H28A28 28 0 0 1 0 260V28A28 28 0 0 1 28 0Z" />
+      <path d="M188 116H244V172H188Z" />
+    </svg>
+  );
+}
+
 // ---------- Configuration serveur partagée ----------
 const ConfigCtx = createContext<{ config: ServerConfig | null; error: string | null; reload: () => void }>({
   config: null,
@@ -148,7 +158,11 @@ export function Cartel({ entry, saved }: { entry: Pick<ArtworkEntry, 'artist' | 
             ))}
         </dl>
       )}
-      {saved && <span className="redot" title="Dans votre collection" />}
+      {saved && (
+        <span className="seal-mark">
+          <SealMark size={16} title="Dans votre collection" />
+        </span>
+      )}
     </div>
   );
 }
@@ -214,7 +228,11 @@ export function WorkTile({
       <div className={`work-frame ${contain ? 'contain' : ''}`}>
         {img ? <img src={img} alt="" loading="lazy" /> : <span className="t-small" style={{ color: 'var(--wall-ink-2)' }}>Sans image</span>}
       </div>
-      {saved && <span className="redot" title="Dans votre collection" />}
+      {saved && (
+        <span className="seal-mark">
+          <SealMark size={14} title="Dans votre collection" />
+        </span>
+      )}
       <div className="work-label">
         {artist && <span className="artist">{artist}</span>}
         <span className="work-title">{title || 'Sans titre'}</span>

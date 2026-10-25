@@ -166,8 +166,8 @@ h1, h2, h3, p { margin: 0; }
 .cartel dl { margin: 12px 0 0; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; font-size: var(--t-xs); line-height: var(--lh-xs); }
 .cartel dt { color: var(--on-surface-2); }
 .cartel dd { margin: 0; }
-.redot { position: absolute; right: 14px; bottom: 14px; width: 12px; height: 12px; border-radius: 50%; background: var(--dot); }
-.redot-inline { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); vertical-align: 1px; }
+.seal-mark { position: absolute; right: 16px; bottom: 16px; display: block; line-height: 0; }
+.wordmark { display: block; height: 24px; width: auto; margin-bottom: 24px; }
 
 /* ---------- Vignettes d'œuvres (collection, découverte) ---------- */
 .works { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); column-gap: var(--gutter); row-gap: 32px; }
@@ -180,7 +180,7 @@ h1, h2, h3, p { margin: 0; }
 .work-label { padding-top: 8px; font-size: var(--t-xs); line-height: var(--lh-xs); }
 .work-label .artist { display: block; }
 .work-label .work-title { display: block; }
-.work .redot { right: 8px; bottom: auto; top: 8px; box-shadow: 0 0 0 3px var(--white); }
+.work .seal-mark { right: 8px; bottom: auto; top: 8px; padding: 4px; background: var(--white); }
 .work:hover .work-frame img { opacity: 0.92; }
 
 /* ---------- Bandeaux d'état ---------- */
