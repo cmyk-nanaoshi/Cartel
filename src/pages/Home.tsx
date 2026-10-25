@@ -29,7 +29,7 @@ export function Home() {
   return (
     <main className="page">
       <header className="hero stack-8">
-        <img className="wordmark" src="/brand/logo-horizontal-blanc.svg" alt="Cartel" width="126" height="24" />
+        <img className="wordmark" src="/brand/logo-horizontal-menthe.svg" alt="Cartel" width="126" height="24" />
         <h1 className="t-display measure">Ce que vous regardez, et d’où cela vient.</h1>
       </header>
 
@@ -46,7 +46,7 @@ export function Home() {
             <p>{t('home.scanText')}</p>
           </div>
           <span className="scan-disc" style={{ display: 'grid', placeItems: 'center', width: 56, height: 56, borderRadius: '50%', background: 'var(--wall-ink)', color: 'var(--wall)' }}>
-            <Icon name="scan" />
+            <span className="scan-square" aria-hidden />
           </span>
         </Link>
 

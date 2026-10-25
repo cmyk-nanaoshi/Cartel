@@ -306,3 +306,6 @@ h1, h2, h3, p { margin: 0; }
 @media (min-width: 720px) { .sheet { place-items: center; } .sheet-body { width: 560px; border: 1px solid var(--ink); } }
 
 fieldset > legend { margin-bottom: 8px; }
+
+/* Bouton « Photographier une œuvre » : un tableau vu de côté, sur le mur de droite */
+.scan-square { display: block; width: 18px; height: 18px; background: var(--carmine); transform: perspective(60px) rotateY(-38deg); }
