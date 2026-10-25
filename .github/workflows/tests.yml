@@ -1,0 +1,17 @@
+# Lance automatiquement les vérifications à chaque envoi de code sur GitHub (onglet « Actions »).
+name: Tests
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
