@@ -1,0 +1,52 @@
+{
+  "name": "cartel",
+  "version": "0.1.0",
+  "description": "Cartel : identifier une oeuvre d'art par photo, lire un cartel, garder ses découvertes.",
+  "scripts": {
+    "dev": "concurrently -n api,web \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "tsx watch server/node.ts",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "tsx server/node.ts",
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "demo": "npm run build && AI_PROVIDER=demo npm start"
+  },
+  "dependencies": {
+    "@fontsource-variable/hanken-grotesk": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.1",
+    "@hono/node-server": "^2.1.5",
+    "dexie": "^4.4.7",
+    "dexie-react-hooks": "^1.1.7",
+    "hono": "^4.13.14",
+    "jspdf": "^2.5.2",
+    "leaflet": "1.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.6",
+    "sharp": "^0.35.5",
+    "tesseract.js": "^5.1.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^26.6.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^10.0.6",
+    "fake-indexeddb": "^6.2.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vite-plugin-pwa": "^0.20.5",
+    "vitest": "^2.1.9"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,18 @@
+# Déploiement Render (https://render.com) : un seul service web Node qui sert l'API et la PWA.
+services:
+  - type: web
+    name: cartel
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: APP_ACCESS_CODE
+        sync: false
+      - key: DAILY_BUDGET_USD
+        value: "2"
+      - key: CONTACT_EMAIL
+        sync: false
