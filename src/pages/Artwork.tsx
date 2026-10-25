@@ -303,7 +303,7 @@ export function Artwork() {
       <div className="actionbar">
         {saved ? (
           <button className="btn btn-ghost" onClick={remove}>
-            <span className="redot-inline" /> {t('entry.saved')}
+            {t('entry.saved')}
           </button>
         ) : (
           <button className="btn btn-ghost" onClick={save}>

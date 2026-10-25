@@ -8,7 +8,6 @@ export function Profile() {
   const { config, error, reload } = useConfig();
   const toast = useToast();
   const [code, setCode] = useState('');
-  const [theme, setTheme] = useState<'auto' | 'light' | 'dark'>('auto');
   const [geo, setGeo] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
   const [counts, setCounts] = useState({ artworks: 0, analyses: 0, entries: 0 });
@@ -17,7 +16,6 @@ export function Profile() {
   useEffect(() => {
     (async () => {
       setCode((await getSetting<string>('accessCode')) ?? '');
-      setTheme((await getSetting<'light' | 'dark'>('theme')) ?? 'auto');
       setGeo((await getSetting<boolean>('saveLocation')) ?? false);
       setCounts({ artworks: await db.artworks.count(), analyses: await db.analyses.count(), entries: await db.entries.count() });
     })();
@@ -27,13 +25,6 @@ export function Profile() {
     await setSetting('accessCode', code.trim());
     toast('Code d’accès enregistré sur cet appareil');
     reload();
-  }
-
-  async function changeTheme(v: 'auto' | 'light' | 'dark') {
-    setTheme(v);
-    await setSetting('theme', v === 'auto' ? null : v);
-    if (v === 'auto') delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = v;
   }
 
   async function toggleGeo(v: boolean) {
@@ -146,16 +137,6 @@ export function Profile() {
 
         <section className="span-all md-span-4 lg-span-5 lg-start-8 stack-16">
           <h2 className="t-head">Préférences</h2>
-          <fieldset className="stack-8" style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend className="t-small t-muted">Apparence</legend>
-            <div className="chips">
-              {(['auto', 'light', 'dark'] as const).map((v) => (
-                <button key={v} className="chip" aria-pressed={theme === v} onClick={() => changeTheme(v)}>
-                  {v === 'auto' ? 'Comme le système' : v === 'light' ? 'Clair' : 'Sombre'}
-                </button>
-              ))}
-            </div>
-          </fieldset>
           <fieldset className="stack-8" style={{ border: 0, padding: 0, margin: 0 }}>
             <legend className="t-small t-muted">Langue de l’interface</legend>
             <div className="chips">

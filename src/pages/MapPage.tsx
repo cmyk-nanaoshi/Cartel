@@ -131,10 +131,10 @@ export default function MapPage() {
     <main className="map-wrap">
       <div ref={el} className="map" aria-label="Carte des musées et œuvres" />
       <div className="map-panel">
-        <button className="chip" onClick={locate} style={{ background: 'var(--surface)' }}>
+        <button className="chip" onClick={locate}>
           <Icon name="locate" size={16} /> Me localiser
         </button>
-        <button className="chip" onClick={searchHere} disabled={loading} style={{ background: 'var(--surface)' }}>
+        <button className="chip" onClick={searchHere} disabled={loading}>
           {loading ? <span className="spinner" /> : <Icon name="search" size={16} />} Chercher ici
         </button>
         <button className="chip" aria-pressed={show.musee} onClick={() => setShow({ ...show, musee: !show.musee })}>
