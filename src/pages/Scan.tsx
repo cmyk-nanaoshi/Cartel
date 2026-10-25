@@ -31,14 +31,27 @@ export function Scan() {
         if (cancelled) return ms.getTracks().forEach((tr) => tr.stop());
         s = ms;
         setStream(ms);
-        if (videoRef.current) videoRef.current.srcObject = ms;
       })
-      .catch(() => setCamError(t('scan.noCamera')));
+      .catch((e: any) =>
+        setCamError(
+          e?.name === 'NotAllowedError'
+            ? 'Accès à la caméra refusé. Autorisez-le dans les réglages de Safari, ou utilisez « Ouvrir l’appareil photo ».'
+            : t('scan.noCamera')
+        )
+      );
     return () => {
       cancelled = true;
       s?.getTracks().forEach((tr) => tr.stop());
     };
   }, []);
+
+  // La vidéo n'existe dans la page qu'une fois le flux obtenu : on l'y branche à ce moment-là.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !stream) return;
+    v.srcObject = stream;
+    v.play().catch(() => {});
+  }, [stream]);
 
   async function handle(blob: Blob) {
     setBusy(true);
