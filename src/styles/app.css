@@ -307,5 +307,5 @@ h1, h2, h3, p { margin: 0; }
 
 fieldset > legend { margin-bottom: 8px; }
 
-/* Bouton « Photographier une œuvre » : un tableau vu de côté, sur le mur de droite */
-.scan-square { display: block; width: 18px; height: 18px; background: var(--carmine); transform: perspective(60px) rotateY(-38deg); }
+/* Bouton « Photographier une œuvre » : un tableau encadré (cadre vert, toile menthe), vu de côté sur le mur de droite */
+.scan-square { display: block; width: 20px; height: 18px; box-sizing: border-box; border: 3px solid var(--green); background: #8fd9c4; transform: perspective(60px) rotateY(-38deg); }
