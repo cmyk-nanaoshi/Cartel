@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { ArtworkEntry, Candidate, ServerConfig } from '../../shared/types';
 import { api, museumImg } from '../lib/api';
 import { frTypo } from '../../shared/typo';
@@ -205,15 +205,21 @@ export function Notice({ kind = 'warn', title, children }: { kind?: 'warn' | 'in
 }
 
 export function BackLink({ to = -1 as any, label = 'Retour' }: { to?: string | number; label?: string }) {
+  const nav = useNavigate();
   if (typeof to === 'number')
     return (
-      <button className="back linkbtn" style={{ textDecoration: 'none' }} onClick={() => history.back()}>
-        <Icon name="back" size={16} /> {label}
+      <button
+        type="button"
+        className="back"
+        // Ouverte directement (lien partagé, app relancée), la page n'a pas d'historique : retour à l'accueil.
+        onClick={() => (window.history.state?.idx > 0 ? nav(-1) : nav('/'))}
+      >
+        <Icon name="back" size={20} /> {label}
       </button>
     );
   return (
     <Link className="back" to={to}>
-      <Icon name="back" size={16} /> {label}
+      <Icon name="back" size={20} /> {label}
     </Link>
   );
 }

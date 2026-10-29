@@ -89,6 +89,9 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* ---------- Mise en page ---------- */
 .app { min-height: 100dvh; padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom)); }
 .page { max-width: var(--max); margin: 0 auto; padding: 24px var(--margin) 48px; }
+/* La barre d'état de l'iPhone est transparente (black-translucent) : la première page commence sous elle. */
+main > .page:first-child { padding-top: calc(24px + env(safe-area-inset-top)); }
+main > .wall:first-child .stage { padding-top: calc(32px + env(safe-area-inset-top)); }
 .grid { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); column-gap: var(--gutter); row-gap: 32px; }
 /* Un élément de grille ne doit jamais imposer sa largeur de contenu (carrousel, mot long) : sinon la page
    déborde à droite et le téléphone dézoome, ce qui décale toutes les marges. */
@@ -125,8 +128,18 @@ h1, h2, h3, p { margin: 0; }
 /* ---------- En-tête de page ---------- */
 .pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--ink); margin-bottom: 24px; }
 .pagehead .t-display, .pagehead .t-title { flex: 1; }
-.back { display: inline-flex; align-items: center; gap: 4px; padding: 8px 0; color: var(--ink-2); text-decoration: none; font-size: var(--t-xs); line-height: var(--lh-xs); }
-.back:hover { color: var(--ink); }
+.back {
+  /* Toujours atteignable : collé sous la barre d'état en défilant, zone de toucher de 44 px au moins. */
+  position: sticky; top: calc(env(safe-area-inset-top) + 8px); z-index: 30;
+  display: flex; width: fit-content; align-items: center; gap: 4px;
+  min-height: 44px; padding: 0 16px 0 8px; margin-left: -8px;
+  border: 0; border-radius: 22px; cursor: pointer; font: inherit;
+  background: color-mix(in srgb, var(--paper) 85%, transparent);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  color: var(--ink); text-decoration: none; font-size: var(--t-s); line-height: var(--lh-s); font-weight: 600;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.back:active { background: color-mix(in srgb, var(--ink) 12%, var(--paper)); }
 
 /* ---------- Boutons ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; text-align: center; gap: 8px; min-height: 48px; padding: 12px 20px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: var(--radius-btn); font-weight: 600; text-decoration: none; cursor: pointer; }
