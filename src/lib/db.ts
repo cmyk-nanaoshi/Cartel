@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { ArtworkEntry, ChatMessage, IdentifyResponse, LabelFields } from '../../shared/types';
+import type { Observation } from '../../shared/observations';
 
 // Stockage local (IndexedDB). Les photos, notes et fiches persistent après fermeture de l'application.
 // Chaque enregistrement porte updatedAt pour une future synchronisation entre appareils.
@@ -7,7 +8,7 @@ import type { ArtworkEntry, ChatMessage, IdentifyResponse, LabelFields } from '.
 export interface SavedArtwork {
   id: string; // clé de la fiche
   entry: ArtworkEntry;
-  photo?: Blob; // photo prise par l'utilisateur (vignette 640 px)
+  photo?: Blob; // photo prise par l'utilisateur (1568 px, ou vignette 640 px pour les anciens enregistrements)
   notes: string;
   tags: string[];
   collectionIds: string[];
@@ -44,6 +45,7 @@ class CartelDB extends Dexie {
   entries!: Table<{ id: string; entry: ArtworkEntry; createdAt: number }, string>;
   chats!: Table<ChatThread, string>;
   settings!: Table<{ key: string; value: unknown }, string>;
+  observations!: Table<Observation, string>;
 
   constructor() {
     super('cartel');
@@ -55,6 +57,8 @@ class CartelDB extends Dexie {
       chats: 'id, updatedAt',
       settings: 'key'
     });
+    // v2 : lieux où le visiteur a vu une œuvre (traçabilité).
+    this.version(2).stores({ observations: 'id, artworkKey, date, updatedAt' });
   }
 }
 
@@ -99,6 +103,9 @@ export async function exportBackup(): Promise<Blob> {
     exportedAt: new Date().toISOString(),
     collections: await db.collections.toArray(),
     chats: await db.chats.toArray(),
+    observations: await Promise.all(
+      (await db.observations.toArray()).map(async (o) => ({ ...o, photo: o.photo ? await blobToDataUrl(o.photo) : undefined }))
+    ),
     artworks: await Promise.all(artworks.map(async (a) => ({ ...a, photo: a.photo ? await blobToDataUrl(a.photo) : undefined })))
   };
   return new Blob([JSON.stringify(out)], { type: 'application/json' });
@@ -110,7 +117,10 @@ export async function importBackup(file: Blob): Promise<number> {
   const artworks: SavedArtwork[] = await Promise.all(
     (data.artworks ?? []).map(async (a: any) => ({ ...a, photo: a.photo ? await dataUrlToBlob(a.photo) : undefined }))
   );
-  await db.transaction('rw', db.artworks, db.collections, db.chats, async () => {
+  const observations: Observation[] = await Promise.all(
+    (data.observations ?? []).map(async (o: any) => ({ ...o, photo: o.photo ? await dataUrlToBlob(o.photo) : undefined }))
+  );
+  await db.transaction('rw', [db.artworks, db.collections, db.chats, db.observations], async () => {
     // Fusion : on garde la version la plus récente de chaque élément.
     for (const a of artworks) {
       const cur = await db.artworks.get(a.id);
@@ -123,6 +133,10 @@ export async function importBackup(file: Blob): Promise<number> {
     for (const t of data.chats ?? []) {
       const cur = await db.chats.get(t.id);
       if (!cur || cur.updatedAt < t.updatedAt) await db.chats.put(t);
+    }
+    for (const o of observations) {
+      const cur = await db.observations.get(o.id);
+      if (!cur || cur.updatedAt < o.updatedAt) await db.observations.put(o);
     }
   });
   return artworks.length;

@@ -327,3 +327,23 @@ fieldset > legend { margin-bottom: 8px; }
 
 /* Bouton « Photographier une œuvre » : un tableau encadré (cadre vert, toile menthe), vu de côté sur le mur de droite */
 .scan-square { display: block; width: 20px; height: 18px; box-sizing: border-box; border: 3px solid var(--green); background: #8fd9c4; transform: perspective(60px) rotateY(-38deg); }
+
+/* ---------- Observations (lieux où l'œuvre a été vue) ---------- */
+.obs-card { background: var(--surface); color: var(--on-surface); border-radius: var(--radius-card); padding: 16px 20px; display: grid; gap: 4px; }
+.obs-card .kind-place { border-color: var(--on-surface); color: var(--on-surface); margin-right: 0; }
+.obs-name { font-weight: 650; font-size: var(--t-m); line-height: var(--lh-m); margin-top: 4px; }
+.obs-meta { font-size: var(--t-xs); line-height: var(--lh-xs); color: var(--on-surface-2); }
+.obs-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--surface-rule); font-size: var(--t-xs); line-height: var(--lh-xs); }
+.obs-vis { display: inline-flex; align-items: center; gap: 6px; color: var(--on-surface-2); }
+.label-mono { font-family: var(--mono); font-weight: 500; font-size: 12px; line-height: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); padding: 0; }
+.form-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--gutter); }
+.input-mono { font-family: var(--mono); font-size: 14px; }
+.check { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 8px; align-items: start; cursor: pointer; }
+.check > span, .vis-option > span { display: grid; }
+.check input, .vis-option input { margin: 4px 0 0; width: 16px; height: 16px; accent-color: var(--white); }
+.vis-list { border-bottom: 1px solid var(--rule); }
+.vis-option { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 8px; padding: 8px 0; border-top: 1px solid var(--rule); cursor: pointer; }
+.vis-option[data-disabled] { opacity: 0.6; cursor: not-allowed; }
+.sheet-body { border-radius: 12px 12px 0 0; }
+@media (min-width: 720px) { .sheet-body { border-radius: 12px; } }
+.plain-fieldset { border: 0; padding: 0; margin-inline: 0; min-width: 0; }

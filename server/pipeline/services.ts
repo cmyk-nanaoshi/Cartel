@@ -45,7 +45,7 @@ const SECTION_TITLES: Record<SectionId, string> = {
   iconographie: 'Iconographie et symboles',
   demarche: 'La démarche de l’artiste',
   provenance: 'Histoire et provenance',
-  localisation: 'Où la voir',
+  localisation: 'Conservée par',
   inscriptions: 'Inscriptions et marques'
 };
 const SECTION_ORDER = Object.keys(SECTION_TITLES) as SectionId[];
@@ -427,7 +427,7 @@ export function baseEntry(
   push('resume', [desc ? fact(desc.value, desc.id) : null]);
   push('technique', [technique ? fact(`Technique : ${technique.value}.`, technique.id) : null, dims ? fact(`Dimensions : ${dims.value}.`, dims.id) : null]);
   push('localisation', [
-    inst ? fact(`Conservée par : ${inst.value}${loc && loc.value !== inst.value ? `, ${loc.value}` : ''}.`, inst.id) : null,
+    inst ? fact(`${inst.value}${loc && loc.value !== inst.value ? `, ${loc.value}` : ''}.`, inst.id) : null,
     inv ? fact(`Numéro d’inventaire : ${inv.value}.`, inv.id) : null
   ]);
   push('provenance', [credit ? fact(`Ligne de crédit : ${credit.value}.`, credit.id) : null]);

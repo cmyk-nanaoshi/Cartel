@@ -9,6 +9,8 @@ import { frTypo } from '../../shared/typo';
 import { session } from '../lib/session';
 import { BackLink, Cartel, Icon, Notice, useToast } from '../components/ui';
 import { t } from '../i18n';
+import { ObservationsSection } from '../components/Observations';
+import { lotFromText } from '../../shared/observations';
 
 const KIND_LABEL: Record<Claim['kind'], string> = {
   fait: 'Fait documenté',
@@ -284,6 +286,15 @@ export function Artwork() {
                 </div>
               </section>
             ))}
+
+            <ObservationsSection
+              artworkKey={key}
+              artworkTitle={entry.title}
+              artworkArtist={entry.artist}
+              hints={{ placeName: label?.institution ?? null, lot: lotFromText([...(state.vision?.visibleText ?? []), ...(state.vision?.inscriptions ?? [])]) }}
+              geo={saved?.geo ?? (state.fromScan ? session.get().geo : undefined)}
+              photo={state.fromScan ? session.get().thumb : undefined}
+            />
 
             <section className="entry-section" id="sources">
               <h2>{t('entry.sources')}</h2>
