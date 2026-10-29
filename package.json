@@ -14,8 +14,9 @@
     "demo": "npm run build && AI_PROVIDER=demo npm start"
   },
   "dependencies": {
-    "@fontsource-variable/hanken-grotesk": "^5.3.0",
-    "@fontsource-variable/source-serif-4": "^5.3.1",
+    "@fontsource-variable/schibsted-grotesk": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/spectral": "^5.3.0",
     "@hono/node-server": "^2.1.5",
     "dexie": "^4.4.7",
     "dexie-react-hooks": "^1.1.7",

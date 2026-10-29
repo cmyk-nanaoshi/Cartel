@@ -154,7 +154,7 @@ export function Cartel({ entry, saved }: { entry: Pick<ArtworkEntry, 'artist' | 
             .map(([k, v]) => (
               <div key={k} style={{ display: 'contents' }}>
                 <dt>{k}</dt>
-                <dd>{frTypo(v)}</dd>
+                <dd className={k === 'Dimensions' || k === 'Inventaire' ? 'mono' : undefined}>{frTypo(v)}</dd>
               </div>
             ))}
         </dl>
