@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { SourceRecord } from '../../shared/types';
 import { candidateFromRecord } from '../../shared/slug';
-import { api } from '../lib/api';
+import { api, museumImg } from '../lib/api';
 import { BackLink, Notice } from '../components/ui';
 import { t } from '../i18n';
 
@@ -16,7 +16,22 @@ export function RecordGrid({ records }: { records: SourceRecord[] }) {
     <div className="works">
       {records.map((r) => (
         <button key={r.id} className="work" onClick={() => open(r)} style={{ background: 'none', border: 0, padding: 0, textAlign: 'left', cursor: 'pointer' }}>
-          <div className="work-frame contain">{r.thumbnailUrl || r.imageUrl ? <img src={r.thumbnailUrl ?? r.imageUrl} alt="" loading="lazy" /> : <span className="t-small" style={{ color: 'var(--wall-ink-2)' }}>Sans image</span>}</div>
+          <div className="work-frame contain">
+            {r.thumbnailUrl || r.imageUrl ? (
+              <img
+                src={museumImg(r.thumbnailUrl ?? r.imageUrl)}
+                alt=""
+                loading="lazy"
+                onError={(e) => {
+                  // Image introuvable à la source : on retire l'image cassée et on garde la notice.
+                  const el = e.currentTarget;
+                  el.replaceWith(Object.assign(document.createElement('span'), { className: 't-small img-missing', textContent: 'Image indisponible' }));
+                }}
+              />
+            ) : (
+              <span className="t-small img-missing">Sans image</span>
+            )}
+          </div>
           <div className="work-label">
             <span className="artist">{r.artist ?? 'Artiste inconnu'}</span>
             <span className="work-title">{r.title ?? 'Sans titre'}</span>

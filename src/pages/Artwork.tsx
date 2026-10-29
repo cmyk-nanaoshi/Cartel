@@ -4,12 +4,37 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import type { ArtworkEntry, Claim, EntryRequest, LabelFields } from '../../shared/types';
 import { OBJECT_KIND_LABEL } from '../../shared/types';
 import { db, uid, type SavedArtwork } from '../lib/db';
-import { api } from '../lib/api';
+import { api, museumImg } from '../lib/api';
+import { frTypo } from '../../shared/typo';
 import { session } from '../lib/session';
 import { BackLink, Cartel, Icon, Notice, useToast } from '../components/ui';
 import { t } from '../i18n';
 
-const KIND_LABEL: Record<Claim['kind'], string> = { fait: 'Fait documenté', interpretation: 'Interprétation', hypothese: 'Hypothèse' };
+const KIND_LABEL: Record<Claim['kind'], string> = {
+  fait: 'Fait documenté',
+  observation: 'Observé',
+  interpretation: 'Interprétation',
+  hypothese: 'Hypothèse'
+};
+const KIND_HELP: Record<Claim['kind'], string> = {
+  fait: 'Présent dans une source, avec son renvoi',
+  observation: 'Visible sur votre photo',
+  interpretation: 'Lecture ou savoir général, hors des sources',
+  hypothese: 'Incertain ou débattu'
+};
+
+const LABEL_FIELD_FR: Record<string, string> = {
+  title: 'Titre',
+  artist: 'Artiste',
+  artistDates: 'Dates de l’artiste',
+  date: 'Date',
+  medium: 'Technique',
+  dimensions: 'Dimensions',
+  inventory: 'Inventaire',
+  institution: 'Institution',
+  creditLine: 'Crédit',
+  description: 'Texte'
+};
 
 export function Artwork() {
   const { key = '' } = useParams();
@@ -21,7 +46,10 @@ export function Artwork() {
   const [entry, setEntry] = useState<ArtworkEntry | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<'repro' | 'photo'>('repro');
+  // La photo du visiteur passe en premier : il est devant l'œuvre, c'est son image de référence.
+  const [view, setView] = useState<'photo' | 'repro'>('photo');
+  const [reproBroken, setReproBroken] = useState(false);
+  const [brokenComparables, setBrokenComparables] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
 
   // Chargement : collection, puis cache local, puis génération.
@@ -63,7 +91,8 @@ export function Artwork() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, saved?.id]);
 
-  const userPhoto = saved?.photo ?? (state.fromScan ? session.get().thumb : undefined);
+  // Photo en pleine définition (1568 px) plutôt que la vignette de 640 px.
+  const userPhoto = saved?.photo ?? (state.fromScan ? session.get().photo ?? session.get().thumb : undefined);
   const photoUrl = useMemo(() => (userPhoto ? URL.createObjectURL(userPhoto) : undefined), [userPhoto]);
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
 
@@ -76,7 +105,7 @@ export function Artwork() {
     const item: SavedArtwork = {
       id: key,
       entry,
-      photo: state.fromScan ? s.thumb : undefined,
+      photo: state.fromScan ? s.photo ?? s.thumb : undefined,
       notes: '',
       tags: [],
       collectionIds: [],
@@ -133,11 +162,18 @@ export function Artwork() {
     );
 
   const srcIndex = new Map(entry.sources.map((s, i) => [s.id, i + 1]));
-  const hasRepro = !!entry.imageUrl;
-  const showPhoto = (view === 'photo' || !hasRepro) && photoUrl;
-  const rawBio = entry.sources.find((s) => s.artistBio)?.artistBio;
+  const hasRepro = !!entry.imageUrl && !reproBroken;
+  const showPhoto = !!photoUrl && (view === 'photo' || !hasRepro);
+  const rawBio = entry.sources.find((s) => s.artistBio && s.source !== 'cartel')?.artistBio;
   // « Georges Seurat (French, 1859–1891) » : on ne garde que la partie entre parenthèses si le nom est répété.
-  const artistBio = rawBio && rawBio.startsWith(entry.artist) ? rawBio.slice(entry.artist.length).replace(/^[\s,]+/, '').replace(/^\((.*)\)$/, '$1') || undefined : rawBio;
+  // La ligne en français (cartel ou traduction) passe avant la notice brute.
+  const artistBio =
+    entry.artistLine ??
+    (rawBio && rawBio.startsWith(entry.artist) ? rawBio.slice(entry.artist.length).replace(/^[\s,]+/, '').replace(/^\((.*)\)$/, '$1') || undefined : rawBio);
+  const kindsUsed = new Set(entry.sections.flatMap((s) => s.claims.map((c) => (c.unsourced ? 'unsourced' : c.kind))));
+  const noticeCount = entry.sources.filter((s) => s.source !== 'cartel').length;
+  const hasCartel = entry.sources.some((s) => s.source === 'cartel');
+  const comparables = entry.comparables.filter((c) => c.imageUrl && !brokenComparables.has(c.sourceId));
 
   return (
     <main>
@@ -146,16 +182,16 @@ export function Artwork() {
           {showPhoto ? (
             <img src={photoUrl} alt="Votre photo de l’œuvre" />
           ) : hasRepro ? (
-            <img src={entry.imageUrl} alt={`Reproduction : ${entry.title}`} />
+            <img src={museumImg(entry.imageUrl)} alt={`Reproduction : ${entry.title}`} onError={() => setReproBroken(true)} />
           ) : (
-            <p style={{ color: 'var(--wall-ink-2)' }}>Pas de reproduction libre de droits disponible.</p>
+            <p style={{ color: 'var(--wall-ink-2)' }}>Pas de reproduction disponible.</p>
           )}
         </div>
         <div className="stage-credit row-between">
-          <span>{showPhoto ? 'Votre photo' : entry.imageCredit ?? ''}</span>
+          <span>{showPhoto ? 'Votre photo' : hasRepro ? frTypo(entry.imageCredit ?? '') : ''}</span>
           {hasRepro && photoUrl && (
             <button className="linkbtn" style={{ color: 'var(--wall-ink)' }} onClick={() => setView(view === 'photo' ? 'repro' : 'photo')}>
-              {view === 'photo' ? 'Voir la reproduction' : 'Voir ma photo'}
+              {view === 'photo' ? 'Voir la reproduction du musée' : 'Revenir à ma photo'}
             </button>
           )}
         </div>
@@ -189,11 +225,11 @@ export function Artwork() {
                 <summary style={{ cursor: 'pointer' }}>Cartel relevé sur place</summary>
                 <dl className="kv" style={{ marginTop: 8 }}>
                   {Object.entries(label)
-                    .filter(([k, v]) => v && k !== 'rawText')
+                    .filter(([k, v]) => v && k in LABEL_FIELD_FR)
                     .map(([k, v]) => (
                       <div key={k} style={{ display: 'contents' }}>
-                        <dt>{k}</dt>
-                        <dd>{String(v)}</dd>
+                        <dt>{LABEL_FIELD_FR[k]}</dt>
+                        <dd>{frTypo(String(v))}</dd>
                       </div>
                     ))}
                 </dl>
@@ -203,24 +239,26 @@ export function Artwork() {
 
           <article className="span-all lg-span-7 lg-start-6 stack-24">
             {entry.warnings.map((w) => (
-              <Notice key={w}>{w}</Notice>
+              <Notice key={w}>{frTypo(w)}</Notice>
             ))}
             <div className="legend" aria-label="Légende">
               <span>
-                <sup style={{ color: 'var(--brass)', fontWeight: 650 }}>1</sup> fait documenté, avec sa source
+                <sup className="legend-sup">1</sup> {KIND_HELP.fait.toLowerCase()}
               </span>
-              <span>
-                <span className="claim">
-                  <span className="kind kind-interpretation">Interprétation</span>
+              {(['observation', 'interpretation', 'hypothese'] as const)
+                .filter((k) => kindsUsed.has(k))
+                .map((k) => (
+                  <span key={k}>
+                    <span className={`kind kind-${k}`}>{KIND_LABEL[k]}</span>
+                    {KIND_HELP[k].toLowerCase()}
+                  </span>
+                ))}
+              {kindsUsed.has('unsourced') && (
+                <span>
+                  <span className="kind kind-unsourced">Non sourcé</span>
+                  donné comme un fait, sans source&nbsp;: à vérifier
                 </span>
-                non sourcée
-              </span>
-              <span>
-                <span className="claim">
-                  <span className="kind kind-hypothese">Hypothèse</span>
-                </span>
-                incertain
-              </span>
+              )}
             </div>
 
             {entry.sections.length === 0 && <p className="t-muted">Aucune information vérifiable n’a pu être rassemblée pour cette œuvre.</p>}
@@ -232,20 +270,15 @@ export function Artwork() {
                   {s.claims.map((c, i) => (
                     <p key={i} className="claim">
                       {c.kind !== 'fait' && (
-                        <span className={`kind kind-${c.kind}`} title={c.unsourced ? 'Présenté comme un fait par l’IA, mais sans source : à vérifier' : KIND_LABEL[c.kind]}>
+                        <span
+                          className={`kind ${c.unsourced ? 'kind-unsourced' : `kind-${c.kind}`}`}
+                          title={c.unsourced ? 'Présenté comme un fait par l’IA, mais sans source : à vérifier' : KIND_HELP[c.kind]}
+                        >
                           {c.unsourced ? 'Non sourcé' : KIND_LABEL[c.kind]}
                         </span>
                       )}
-                      {c.text}
-                      {c.sources.map((sid) =>
-                        srcIndex.has(sid) ? (
-                          <sup key={sid}>
-                            <a href={`#src-${srcIndex.get(sid)}`} aria-label={`Source ${srcIndex.get(sid)}`}>
-                              {srcIndex.get(sid)}
-                            </a>
-                          </sup>
-                        ) : null
-                      )}
+                      {frTypo(c.text)}
+                      <Refs ids={c.sources.filter((sid) => srcIndex.has(sid)).map((sid) => srcIndex.get(sid)!)} />
                     </p>
                   ))}
                 </div>
@@ -260,12 +293,17 @@ export function Artwork() {
                     <li key={s.id} id={`src-${i + 1}`}>
                       <span className="sid num">{i + 1}</span>
                       <span>
-                        <a href={s.url} target="_blank" rel="noreferrer">
-                          {s.sourceLabel}
-                        </a>
-                        {s.title ? `, « ${s.title} »` : ''}
-                        {s.inventory ? `, inv. ${s.inventory}` : ''}
-                        {s.imageLicense ? <span className="t-faint"> Image : {s.imageLicense}.</span> : null}
+                        {s.url ? (
+                          <a href={s.url} target="_blank" rel="noreferrer">
+                            {s.sourceLabel}
+                          </a>
+                        ) : (
+                          <strong style={{ fontWeight: 650 }}>{s.sourceLabel}</strong>
+                        )}
+                        {frTypo(`${s.title ? `, « ${s.title} »` : ''}${s.inventory ? `, inv. ${s.inventory}` : ''}`)}
+                        {s.source === 'cartel' && s.institution ? frTypo(`, ${s.institution}`) : ''}
+                        {s.source === 'cartel' ? <span className="t-faint"> Fait foi pour l’exemplaire photographié.</span> : null}
+                        {s.imageLicense ? <span className="t-faint"> {frTypo(`Image : ${s.imageLicense}.`)}</span> : null}
                       </span>
                     </li>
                   ))}
@@ -274,21 +312,31 @@ export function Artwork() {
                 <p className="t-small t-muted">Aucune notice de musée n’a été trouvée. Le contenu de cette fiche n’est pas vérifié.</p>
               )}
               <p className="t-small t-faint" style={{ marginTop: 12 }}>
-                {entry.aiWritten
-                  ? `Texte rédigé par ${entry.model} à partir de ${entry.sources.length} notice${entry.sources.length > 1 ? 's' : ''}, le ${new Date(entry.generatedAt).toLocaleDateString('fr-FR')}. Les interprétations ne sont pas vérifiées par une source.`
-                  : 'Fiche construite à partir des champs des notices, sans rédaction par IA.'}
+                {frTypo(
+                  entry.aiWritten
+                    ? `Texte rédigé par ${entry.model} à partir ${[hasCartel ? 'du cartel' : '', noticeCount ? `de ${noticeCount} notice${noticeCount > 1 ? 's' : ''} de musée` : ''].filter(Boolean).join(' et ') || 'd’aucune source'}, le ${new Date(entry.generatedAt).toLocaleDateString('fr-FR')}. Les observations, interprétations et hypothèses ne sont pas vérifiées par une source.`
+                    : 'Fiche construite à partir des champs du cartel et des notices, sans rédaction par IA.'
+                )}
               </p>
             </section>
 
-            {entry.comparables.length > 0 && (
+            {/* Une suggestion sans image est contre-productive : seules les œuvres dont l'image s'affiche restent. */}
+            {comparables.length > 0 && (
               <section className="entry-section stack-16">
                 <h2>{t('entry.comparables')}</h2>
                 <div className="comparables">
-                  {entry.comparables.map((c) => (
+                  {comparables.map((c) => (
                     <a key={c.sourceId} href={c.url} target="_blank" rel="noreferrer" className="work" style={{ gridColumn: 'auto' }}>
-                      <div className="work-frame">{c.imageUrl ? <img src={c.imageUrl} alt="" loading="lazy" /> : null}</div>
+                      <div className="work-frame">
+                        <img
+                          src={museumImg(c.imageUrl)}
+                          alt=""
+                          loading="lazy"
+                          onError={() => setBrokenComparables((b) => new Set(b).add(c.sourceId))}
+                        />
+                      </div>
                       <div className="work-label">
-                        <span className="work-title">{c.title}</span>
+                        <span className="work-title">{frTypo(c.title)}</span>
                         {c.date && <span className="t-muted">{c.date}</span>}
                       </div>
                     </a>
@@ -392,5 +440,23 @@ function EditSheet({ item, onClose }: { item: SavedArtwork; onClose: () => void 
         </button>
       </div>
     </div>
+  );
+}
+
+/** Appels de note groupés : « ¹,² », collés au mot, sans espace ni saut de ligne. */
+function Refs({ ids }: { ids: number[] }) {
+  const uniq = [...new Set(ids)].sort((a, b) => a - b);
+  if (!uniq.length) return null;
+  return (
+    <sup className="refs">
+      {uniq.map((n, i) => (
+        <span key={n}>
+          {i > 0 && ','}
+          <a href={`#src-${n}`} aria-label={`Source ${n}`}>
+            {n}
+          </a>
+        </span>
+      ))}
+    </sup>
   );
 }

@@ -16,8 +16,26 @@ export const OBJECT_KINDS = [
   'objet_design', 'art_urbain', 'architecture', 'arts_decoratifs', 'autre'
 ];
 
+const labelFields = {
+  title: nstr,
+  artist: nstr,
+  artistDates: nstr,
+  date: nstr,
+  medium: nstr,
+  dimensions: nstr,
+  inventory: nstr,
+  institution: nstr,
+  creditLine: nstr,
+  description: nstr,
+  rawText: { ...str, description: 'Transcription intégrale du cartel, ligne par ligne, mot pour mot.' }
+};
+
 export const identifySchema = obj({
   isArtwork: { type: 'boolean', description: "Vrai si l'image montre une œuvre, un objet d'art ou de design, ou un monument." },
+  label: {
+    anyOf: [obj(labelFields), { type: 'null' }],
+    description: 'Cartel du musée visible sur la photo, lu champ par champ, tel qu’il est écrit. null si aucun cartel n’est lisible.'
+  },
   imageQualityIssue: { ...nstr, description: 'Problème empêchant l’analyse (flou, reflet, cadrage), sinon null.' },
   objectKind: { type: 'string', enum: OBJECT_KINDS },
   description: { ...str, description: 'Description factuelle de ce qui est visible, 2 à 4 phrases.' },
@@ -38,29 +56,19 @@ export const identifySchema = obj({
   searchQueries: { ...strArr, description: 'Requêtes courtes pour vérifier dans des catalogues (titre original, titre anglais, artiste).' }
 });
 
-export const labelSchema = obj({
-  title: nstr,
-  artist: nstr,
-  artistDates: nstr,
-  date: nstr,
-  medium: nstr,
-  dimensions: nstr,
-  inventory: nstr,
-  institution: nstr,
-  creditLine: nstr,
-  description: nstr,
-  rawText: { ...str, description: 'Transcription intégrale du cartel, ligne par ligne.' }
-});
+export const labelSchema = obj(labelFields);
 
 const claim = obj({
   text: str,
-  kind: { type: 'string', enum: ['fait', 'interpretation', 'hypothese'] },
+  kind: { type: 'string', enum: ['fait', 'observation', 'interpretation', 'hypothese'] },
   sources: { ...strArr, description: 'Identifiants des notices fournies qui étayent la phrase (ex. "S1"). Vide si aucune.' }
 });
 
 export const entrySchema = obj({
   objectKind: { type: 'string', enum: OBJECT_KINDS },
-  movement: nstr,
+  movement: { ...nstr, description: 'Mouvement ou école, en français, seulement si une source l’indique.' },
+  technique: { ...nstr, description: 'Technique telle que donnée par le cartel, sinon par les notices, traduite en français (ex. « Estampe nishiki-e, format ōban »).' },
+  artistLine: { ...nstr, description: 'Nom en écriture d’origine s’il figure dans les sources, nationalité et dates de l’artiste, en français (ex. « 葛飾 北斎, japonais, 1760-1849 »).' },
   sections: {
     type: 'array',
     items: obj({

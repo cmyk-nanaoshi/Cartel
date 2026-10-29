@@ -23,6 +23,16 @@ export class ApiError extends Error {
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '';
 
+/**
+ * Adresse d'affichage d'une image de musée : relayée par notre serveur, car certains musées
+ * (l'AIC notamment) bloquent l'affichage direct sur téléphone. Les photos locales passent telles quelles.
+ */
+export function museumImg(u?: string | null): string | undefined {
+  if (!u) return undefined;
+  if (/^(blob:|data:|\/)/.test(u)) return u;
+  return `${BASE}/api/img?u=${encodeURIComponent(u)}`;
+}
+
 async function headers(extra: Record<string, string> = {}) {
   const code = await getSetting<string>('accessCode');
   return { ...(code ? { 'x-access-code': code } : {}), ...extra };

@@ -97,7 +97,7 @@ export async function fetchImage(url: string, timeoutMs: number, userAgent: stri
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': userAgent } });
+    const res = await fetch(url, { signal: ctrl.signal, headers: imageHeaders(url, userAgent) });
     if (!res.ok) return null;
     const len = Number(res.headers.get('content-length') ?? 0);
     if (len > 5_000_000) return null;
@@ -108,5 +108,29 @@ export async function fetchImage(url: string, timeoutMs: number, userAgent: stri
     return null;
   } finally {
     clearTimeout(t);
+  }
+}
+
+/** En-têtes pour les serveurs d'images de musées. L'AIC demande en plus AIC-User-Agent. */
+export function imageHeaders(url: string, userAgent: string): Record<string, string> {
+  const h: Record<string, string> = { 'User-Agent': userAgent, Accept: 'image/avif,image/webp,image/jpeg,image/*;q=0.8' };
+  try {
+    if (new URL(url).hostname.endsWith('artic.edu')) h['AIC-User-Agent'] = userAgent;
+  } catch {
+    /* URL invalide : fetch échouera de lui-même */
+  }
+  return h;
+}
+
+/** Hôtes d'images autorisés pour le relais /api/img (pas de relais ouvert vers n'importe quel site). */
+export const IMAGE_HOSTS = ['artic.edu', 'metmuseum.org', 'wikimedia.org', 'si.edu', 'rijksmuseum.nl', 'culture.gouv.fr'];
+
+export function allowedImageUrl(raw: string): URL | null {
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== 'https:') return null;
+    return IMAGE_HOSTS.some((h) => u.hostname === h || u.hostname.endsWith('.' + h)) ? u : null;
+  } catch {
+    return null;
   }
 }

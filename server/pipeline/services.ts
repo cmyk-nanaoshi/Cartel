@@ -24,7 +24,7 @@ import type { Cache } from '../lib/cache.js';
 import { sha256 } from '../lib/cache.js';
 import type { Limiter } from '../lib/limits.js';
 import type { SourceRegistry } from '../sources/index.js';
-import { buildCandidate, decideStatus, rankRecords } from './scoring.js';
+import { buildCandidate, confidenceLabel, decideStatus, rankRecords } from './scoring.js';
 import { fetchImage, fingerprintQuery, fingerprintReference, similarity } from './visual.js';
 import { artistMatch, slug } from '../lib/text.js';
 
@@ -89,7 +89,7 @@ export class Services {
 
   async identify(buf: Buffer, mime: string): Promise<IdentifyResponse> {
     const { jpeg, hash } = await this.prepareImage(buf, mime);
-    const cacheKey = `identify:v1:${this.ai.name}:${hash}`;
+    const cacheKey = `identify:v2:${this.ai.name}:${hash}`;
     const hit = await this.cache.get<IdentifyResponse>(cacheKey);
     if (hit) return { ...hit, cached: true, usage: undefined };
     this.ensureBudget();
@@ -117,7 +117,8 @@ export class Services {
       return this.finish(cacheKey, { analysisId: hash, status: 'unusable_image', vision, candidates: [], warnings, usage });
     }
 
-    const hyps = vision.hypotheses.slice(0, 3);
+    // Le cartel visible sur la photo fait foi : son titre et son artiste deviennent l'hypothèse principale.
+    const hyps = applyLabelToHypotheses(vision).slice(0, 3);
     const searches = await Promise.all(
       hyps.map(async (h, i) => {
         const first = await this.sources.searchAll({ title: h.title, artist: h.artist, limit: 3 });
@@ -164,11 +165,18 @@ export class Services {
         const valid = scores.filter((s): s is number => s !== null);
         if (valid.length) visual = Math.max(...valid);
       }
-      candidates.push(buildCandidate(h, ranked, visual));
+      const cand = buildCandidate(h, ranked, visual);
+      if (labelBacked(vision, h)) {
+        cand.labelConfirmed = true;
+        cand.verified = true;
+        cand.confidence = Math.max(cand.confidence, 0.9);
+        cand.confidenceLabel = confidenceLabel(cand.confidence);
+      }
+      candidates.push(cand);
     }
     candidates.sort((a, b) => b.confidence - a.confidence);
     const status = decideStatus(candidates);
-    if (candidates.length && !candidates.some((c) => c.verified))
+    if (candidates.length && !candidates.some((c) => c.verified || c.labelConfirmed))
       warnings.push('Aucune notice concordante trouvée dans les bases interrogées : l’identification n’est pas vérifiée.');
     return this.finish(cacheKey, { analysisId: hash, status, vision, candidates, warnings, usage });
   }
@@ -212,8 +220,10 @@ export class Services {
   async entry(req: EntryRequest): Promise<ArtworkEntry> {
     const c = req.candidate;
     if (!c?.title || !c?.artist) throw new InputError('Titre et artiste requis pour rédiger une fiche.');
-    const records = (c.records ?? []).slice(0, 6);
-    const key = `entry:v1:${this.ai.name}:${c.key}:${records.map((r) => r.id).join(',')}`;
+    // Le cartel lu sur place est la première source : il fait foi pour l'exemplaire photographié.
+    const cartel = labelRecord(req.label);
+    const records = [...(cartel ? [cartel] : []), ...(c.records ?? []).filter((r) => r.source !== 'cartel').slice(0, 6)];
+    const key = `entry:v2:${this.ai.name}:${c.key}:${records.map((r) => r.id).join(',')}`;
     const hit = await this.cache.get<ArtworkEntry>(key);
     if (hit) return hit;
 
@@ -232,16 +242,22 @@ export class Services {
       `Œuvre retenue : « ${c.title} », ${c.artist}${c.date ? `, ${c.date}` : ''}.`,
       req.vision ? `Nature observée sur la photo : ${req.vision.objectKind}. Observation : ${req.vision.description}` : '',
       req.vision?.inscriptions?.length ? `Inscriptions visibles : ${req.vision.inscriptions.join(' | ')}` : '',
-      req.label ? `Cartel lu et validé par le visiteur : ${JSON.stringify(req.label)}` : '',
-      records.length ? '' : 'Aucune notice n’a été trouvée : toutes les phrases doivent être de type interpretation ou hypothese.',
+      cartel ? 'Le cartel photographié sur place figure dans les sources : il fait foi.' : '',
+      records.length ? '' : 'Aucune source n’a été trouvée : toutes les phrases doivent être de type observation, interpretation ou hypothese.',
       '',
-      'Notices documentaires :',
+      'Sources :',
       text
     ]
       .filter((l) => l !== '')
       .join('\n');
     try {
-      const { data, usage } = await this.ai.json<{ objectKind: string; movement: string | null; sections: { id: SectionId; claims: Claim[] }[] }>({
+      const { data, usage } = await this.ai.json<{
+        objectKind: string;
+        movement: string | null;
+        technique: string | null;
+        artistLine: string | null;
+        sections: { id: SectionId; claims: Claim[] }[];
+      }>({
         task: 'entry',
         system: ENTRY_SYSTEM,
         content: [{ type: 'text', text: context }],
@@ -253,14 +269,17 @@ export class Services {
       const entry: ArtworkEntry = {
         ...base,
         objectKind: (OBJECT_KINDS.includes(data.objectKind) ? data.objectKind : base.objectKind) as ObjectKind,
-        movement: base.movement ?? data.movement ?? null,
+        movement: data.movement ?? base.movement ?? null,
+        // Le cartel est déjà en français et fait foi ; sinon, la traduction proposée par le modèle.
+        technique: (cartel?.medium ?? data.technique ?? base.technique) || null,
+        artistLine: (req.label?.artistDates ? cleanArtistDates(req.label.artistDates) : data.artistLine) || base.artistLine || null,
         sections: normalizeSections(data.sections, ids),
         aiWritten: true,
         model: usage.model,
         usage
       };
       if (entry.sections.some((s) => s.claims.some((cl) => cl.unsourced)))
-        entry.warnings.push('Certaines affirmations présentées comme des faits n’étaient pas étayées par une notice : elles sont signalées comme non sourcées.');
+        entry.warnings.push('Certaines affirmations présentées comme des faits n’étaient étayées par aucune source : elles sont signalées comme non sourcées.');
       await this.cache.set(key, entry);
       return entry;
     } catch (e) {
@@ -277,15 +296,28 @@ export class Services {
     try {
       const { records } = await this.sources.searchAll({ artist, text: artist.split(' ').pop(), limit: 4 });
       const ownIds = new Set(own.map((r) => r.id));
-      return records
+      const pool = records
         .filter((r) => !ownIds.has(r.id) && artistMatch(artist, r.artist) > 0 && slug(r.title ?? '') !== slug(title))
+        .filter((r) => r.thumbnailUrl || r.imageUrl)
+        .slice(0, 10);
+      // Une suggestion sans image visible est contre-productive : on vérifie que l'image se télécharge
+      // vraiment avant de la proposer, et on écarte les autres.
+      const checked = await Promise.all(
+        pool.map(async (r) => {
+          const url = r.thumbnailUrl ?? r.imageUrl!;
+          const ok = await imageLoads(url, this.sources.http.userAgent);
+          return ok ? { r, url } : null;
+        })
+      );
+      return checked
+        .filter((x): x is { r: SourceRecord; url: string } => !!x)
         .slice(0, 6)
-        .map((r) => ({
+        .map(({ r, url }) => ({
           title: r.title ?? 'Sans titre',
           artist: r.artist,
           date: r.date,
           url: r.url,
-          imageUrl: r.thumbnailUrl ?? r.imageUrl,
+          imageUrl: url,
           sourceId: r.id
         }));
     } catch {
@@ -329,6 +361,7 @@ export function sanitizeVision(v: any): VisionAnalysis {
     .sort((a: any, b: any) => b.confidence - a.confidence);
   return {
     isArtwork: v?.isArtwork !== false,
+    label: sanitizeLabel(v?.label),
     imageQualityIssue: typeof v?.imageQualityIssue === 'string' && v.imageQualityIssue.trim() ? v.imageQualityIssue : null,
     objectKind: OBJECT_KINDS.includes(v?.objectKind) ? v.objectKind : 'autre',
     description: String(v?.description ?? ''),
@@ -353,8 +386,9 @@ export function normalizeSections(sections: { id: SectionId; claims: Claim[] }[]
         const srcs = (c.sources ?? [])
           .map((x) => ids.get(String(x).replace(/[\[\]\s]/g, '')))
           .filter((x): x is string => !!x);
-        const kind = ['fait', 'interpretation', 'hypothese'].includes(c.kind) ? c.kind : 'interpretation';
+        const kind = ['fait', 'observation', 'interpretation', 'hypothese'].includes(c.kind) ? c.kind : 'interpretation';
         if (kind === 'fait' && !srcs.length) return { text: c.text.trim(), kind: 'interpretation' as const, sources: [], unsourced: true };
+        // Une observation ou une interprétation ne porte pas d'appel de note, sauf si une source la contient.
         return { text: c.text.trim(), kind, sources: [...new Set(srcs)] } as Claim;
       });
     if (claims.length) byId.set(s.id, [...(byId.get(s.id) ?? []), ...claims]);
@@ -382,7 +416,8 @@ export function baseEntry(
   const mov = pick('movement');
   const desc = pick('description');
   const credit = pick('credit');
-  const img = records.find((r) => r.imageUrl);
+  const img = records.find((r) => r.imageUrl && r.source !== 'cartel');
+  const cartel = records.find((r) => r.source === 'cartel');
   const facts: EntrySection[] = [];
   const push = (id: SectionId, claims: (Claim | null)[]) => {
     const ok = claims.filter(Boolean) as Claim[];
@@ -397,20 +432,22 @@ export function baseEntry(
   ]);
   push('provenance', [credit ? fact(`Ligne de crédit : ${credit.value}.`, credit.id) : null]);
   const ins = req.vision?.inscriptions ?? [];
-  push('inscriptions', ins.length ? [{ text: `Relevé sur la photo : ${ins.join(' ; ')}.`, kind: 'hypothese', sources: [] }] : []);
+  push('inscriptions', ins.length ? [{ text: `Relevé sur la photo : ${ins.join(' ; ')}.`, kind: 'observation', sources: [] }] : []);
 
   return {
     key: c.key,
     title: c.title,
     artist: c.artist,
-    date: c.date ?? pick('date')?.value ?? null,
+    date: cartel?.date ?? c.date ?? pick('date')?.value ?? null,
     objectKind: (req.vision?.objectKind as ObjectKind) ?? 'autre',
     movement: mov?.value ?? null,
-    technique: technique?.value ?? req.label?.medium ?? null,
-    dimensions: dims?.value ?? req.label?.dimensions ?? null,
-    institution: inst?.value ?? req.label?.institution ?? null,
+    artistLine: req.label?.artistDates ? cleanArtistDates(req.label.artistDates) : null,
+    // pick() lit d'abord le cartel, placé en tête des sources.
+    technique: technique?.value ?? null,
+    dimensions: dims?.value ?? null,
+    institution: inst?.value ?? null,
     location: loc?.value ?? null,
-    inventory: inv?.value ?? req.label?.inventory ?? null,
+    inventory: inv?.value ?? null,
     imageUrl: img?.imageUrl,
     imageCredit: img ? `${img.sourceLabel}${img.imageLicense ? `, ${img.imageLicense}` : ''}` : undefined,
     sections: facts,
@@ -421,6 +458,93 @@ export function baseEntry(
     demo: ai.demo,
     aiWritten: false,
     generatedAt: new Date().toISOString(),
-    warnings: records.length ? [] : ['Aucune notice documentaire n’a été trouvée pour cette œuvre.']
+    warnings: records.some((r) => r.source !== 'cartel') ? [] : ['Aucune notice de musée n’a été trouvée pour cette œuvre.']
   };
+}
+
+// ---------- Cartel ----------
+
+const LABEL_KEYS = ['title', 'artist', 'artistDates', 'date', 'medium', 'dimensions', 'inventory', 'institution', 'creditLine', 'description'] as const;
+
+export function sanitizeLabel(l: any): LabelFields | null {
+  if (!l || typeof l !== 'object') return null;
+  const out: any = {};
+  for (const k of LABEL_KEYS) out[k] = typeof l[k] === 'string' && l[k].trim() ? l[k].trim() : null;
+  out.rawText = typeof l.rawText === 'string' ? l.rawText.trim() : '';
+  return LABEL_KEYS.some((k) => out[k]) || out.rawText ? (out as LabelFields) : null;
+}
+
+/** Le cartel lu sur place devient une source à part entière, citable et prioritaire. */
+export function labelRecord(label?: Partial<LabelFields> | null): SourceRecord | null {
+  if (!label) return null;
+  const has = LABEL_KEYS.some((k) => typeof label[k] === 'string' && label[k]!.trim());
+  if (!has) return null;
+  const v = (x?: string | null) => (x && x.trim() ? x.trim() : undefined);
+  const id = 'cartel:' + sha256(JSON.stringify(LABEL_KEYS.map((k) => label[k] ?? null))).slice(0, 12);
+  return {
+    id,
+    source: 'cartel',
+    sourceLabel: 'Cartel photographié sur place',
+    url: '',
+    title: v(label.title),
+    artist: v(label.artist),
+    artistBio: v(label.artistDates),
+    date: v(label.date),
+    medium: v(label.medium),
+    dimensions: v(label.dimensions),
+    institution: v(label.institution),
+    inventory: v(label.inventory),
+    credit: v(label.creditLine),
+    description: v(label.description)
+  };
+}
+
+/** « (Japon, 1760-1849) » devient « Japon, 1760-1849 ». */
+function cleanArtistDates(s: string) {
+  return s.trim().replace(/^\((.*)\)$/, '$1');
+}
+
+function labelBacked(vision: VisionAnalysis, h: { reasoning: string }) {
+  return !!vision.label && h.reasoning.startsWith(LABEL_REASON);
+}
+
+const LABEL_REASON = 'Lu sur le cartel visible sur la photo.';
+
+/** Si le cartel lisible nomme une œuvre que le modèle n'a pas proposée, elle passe en tête. */
+export function applyLabelToHypotheses(vision: VisionAnalysis): VisionAnalysis['hypotheses'] {
+  const l = vision.label;
+  const hyps = [...vision.hypotheses];
+  if (!l?.title || !l.artist) return hyps;
+  const same = hyps.findIndex((h) => artistMatch(l.artist!, h.artist) > 0);
+  if (same >= 0) {
+    const [h] = hyps.splice(same, 1);
+    return [{ ...h, confidence: Math.max(h.confidence, 0.9), reasoning: `${LABEL_REASON} ${h.reasoning}`.trim() }, ...hyps];
+  }
+  return [
+    { title: l.title, artist: l.artist, date: l.date, confidence: 0.9, reasoning: LABEL_REASON, distinguishing: '' },
+    ...hyps
+  ];
+}
+
+// ---------- Images ----------
+
+const imageOk = new Map<string, { ok: boolean; at: number }>();
+
+/** Vérifie qu'une image de musée se télécharge (résultat gardé une heure). */
+export async function imageLoads(url: string, userAgent: string): Promise<boolean> {
+  const hit = imageOk.get(url);
+  if (hit && Date.now() - hit.at < 3600_000) return hit.ok;
+  const b = await fetchImage(url, 5000, userAgent);
+  let ok = false;
+  if (b && b.length > 500) {
+    try {
+      const m = await sharp(b).metadata();
+      ok = (m.width ?? 0) >= 64 && (m.height ?? 0) >= 64;
+    } catch {
+      ok = false;
+    }
+  }
+  imageOk.set(url, { ok, at: Date.now() });
+  if (imageOk.size > 2000) imageOk.delete(imageOk.keys().next().value!);
+  return ok;
 }

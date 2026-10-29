@@ -30,9 +30,14 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => /artic\.edu|metmuseum\.org|wikimedia\.org/.test(url.hostname),
+            // Images de musées relayées par le serveur (/api/img) : gardées pour la consultation hors ligne.
+            urlPattern: ({ url }) => url.pathname === '/api/img',
             handler: 'CacheFirst',
-            options: { cacheName: 'images-oeuvres', expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 60 } }
+            options: {
+              cacheName: 'images-oeuvres-v2',
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 60 }
+            }
           }
         ]
       }

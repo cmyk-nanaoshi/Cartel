@@ -12,6 +12,7 @@ import { InputError, Services } from './pipeline/services.js';
 import { aicRandom } from './sources/aic.js';
 import { wikidataPlacesAround } from './sources/wikidata.js';
 import { FIXTURE_RECORDS } from './sources/fixtures.js';
+import { allowedImageUrl, fetchImage } from './pipeline/visual.js';
 
 export interface AppDeps {
   cfg?: AppConfig;
@@ -40,8 +41,10 @@ export function createApp(deps: AppDeps = {}) {
     c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || c.req.header('x-real-ip') || 'local';
 
   // Code d'accès facultatif : empêche des inconnus de consommer votre crédit API si l'URL circule.
+  // Le relais d'images en est exempté : une balise <img> ne peut pas envoyer d'en-tête, et il ne sert
+  // que des images de musées (liste fermée d'hôtes), sans coût d'API.
   app.use('/api/*', async (c, next) => {
-    if (cfg.accessCode && c.req.path !== '/api/config' && c.req.path !== '/api/health') {
+    if (cfg.accessCode && c.req.path !== '/api/config' && c.req.path !== '/api/health' && c.req.path !== '/api/img') {
       if (c.req.header('x-access-code') !== cfg.accessCode) return c.json({ error: 'Code d’accès requis ou incorrect.', code: 'access' }, 401);
     }
     await next();
@@ -57,6 +60,29 @@ export function createApp(deps: AppDeps = {}) {
   };
 
   app.get('/api/health', (c) => c.json({ ok: true }));
+
+  // Relais des images de musées. Certains serveurs (IIIF de l'AIC notamment) refusent ou bloquent
+  // l'affichage direct depuis un téléphone ; le serveur les télécharge avec un en-tête identifiable.
+  const imgMem = new Map<string, { body: Buffer; type: string; at: number }>();
+  app.get('/api/img', async (c) => {
+    const u = allowedImageUrl(c.req.query('u') ?? '');
+    if (!u) return c.json({ error: 'Image non autorisée.' }, 400);
+    const key = u.toString();
+    let hit = imgMem.get(key);
+    if (!hit || Date.now() - hit.at > 6 * 3600_000) {
+      const body = await fetchImage(key, 8000, sources.http.userAgent);
+      if (!body) return c.json({ error: 'Image indisponible à la source.' }, 502);
+      const head = body.subarray(0, 4).toString('hex');
+      const type = head.startsWith('89504e47') ? 'image/png' : head.startsWith('52494646') ? 'image/webp' : head.startsWith('47494638') ? 'image/gif' : 'image/jpeg';
+      hit = { body, type, at: Date.now() };
+      imgMem.set(key, hit);
+      // Petite mémoire : 120 images au plus.
+      if (imgMem.size > 120) imgMem.delete(imgMem.keys().next().value!);
+    }
+    return new Response(new Uint8Array(hit.body), {
+      headers: { 'Content-Type': hit.type, 'Cache-Control': 'public, max-age=604800, immutable' }
+    });
+  });
 
   app.get('/api/config', (c) => {
     const body: ServerConfig = {

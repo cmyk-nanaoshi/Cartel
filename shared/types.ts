@@ -27,7 +27,7 @@ export const OBJECT_KIND_LABEL: Record<ObjectKind, string> = {
   autre: 'Autre'
 };
 
-export type SourceId = 'met' | 'aic' | 'wikidata' | 'joconde' | 'rijksmuseum' | 'smithsonian' | 'fixture';
+export type SourceId = 'cartel' | 'met' | 'aic' | 'wikidata' | 'joconde' | 'rijksmuseum' | 'smithsonian' | 'fixture';
 
 /** Notice issue d'une base documentaire réelle. Rien ici n'est produit par l'IA. */
 export interface SourceRecord {
@@ -65,6 +65,8 @@ export interface VisionHypothesis {
 
 export interface VisionAnalysis {
   isArtwork: boolean;
+  /** Cartel visible sur la photo de l'œuvre, lu champ par champ. null s'il n'y en a pas. */
+  label: LabelFields | null;
   imageQualityIssue: string | null;
   objectKind: ObjectKind;
   description: string;
@@ -88,7 +90,8 @@ export interface Candidate {
   date: string | null;
   confidence: number;
   confidenceLabel: 'élevée' | 'moyenne' | 'faible';
-  verified: boolean; // au moins une notice concordante dans une base
+  verified: boolean; // au moins une notice concordante dans une base, ou le cartel lu sur la photo
+  labelConfirmed?: boolean; // titre et artiste lus sur le cartel visible sur la photo
   signals: CandidateSignals;
   reasoning: string;
   distinguishing: string;
@@ -139,7 +142,13 @@ export interface LabelResponse {
   warnings: string[];
 }
 
-export type ClaimKind = 'fait' | 'interpretation' | 'hypothese';
+/**
+ * fait : documenté par une source (cartel ou notice) ;
+ * observation : visible sur la photo du visiteur ;
+ * interpretation : lecture ou savoir général non tiré des sources ;
+ * hypothese : incertain ou débattu.
+ */
+export type ClaimKind = 'fait' | 'observation' | 'interpretation' | 'hypothese';
 
 export interface Claim {
   text: string;
@@ -181,6 +190,8 @@ export interface ArtworkEntry {
   date: string | null;
   objectKind: ObjectKind;
   movement: string | null;
+  /** Nationalité et dates de l'artiste, en français (« japonais, 1760-1849 »). */
+  artistLine?: string | null;
   technique: string | null;
   dimensions: string | null;
   institution: string | null;
@@ -203,6 +214,7 @@ export interface ArtworkEntry {
 export interface EntryRequest {
   candidate: Pick<Candidate, 'key' | 'title' | 'artist' | 'date' | 'records'>;
   vision?: Pick<VisionAnalysis, 'objectKind' | 'description' | 'visibleText' | 'inscriptions'>;
+  /** Cartel lu sur place (photo du cartel validée, ou cartel visible sur la photo de l'œuvre). Il fait foi. */
   label?: Partial<LabelFields>;
 }
 

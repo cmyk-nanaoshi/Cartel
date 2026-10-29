@@ -9,6 +9,7 @@ const zero = (model = 'demo'): UsageInfo => ({ model, inputTokens: 0, outputToke
 
 export const DEMO_VISION: VisionAnalysis = {
   isArtwork: true,
+  label: null,
   imageQualityIssue: null,
   objectKind: 'peinture',
   description:
@@ -43,7 +44,7 @@ export class DemoProvider implements AIProvider {
 
   async json<T>(req: JsonRequest): Promise<{ data: T; usage: UsageInfo }> {
     if (req.task === 'identify') return { data: structuredClone(DEMO_VISION) as T, usage: zero() };
-    if (req.task === 'entry') return { data: { objectKind: 'peinture', movement: null, sections: [] } as T, usage: zero() };
+    if (req.task === 'entry') return { data: { objectKind: 'peinture', movement: null, technique: null, artistLine: null, sections: [] } as T, usage: zero() };
     throw new AIError('Lecture du cartel par IA indisponible en mode démonstration.', 503, 'other');
   }
 

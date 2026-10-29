@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { ArtworkEntry, Candidate, ServerConfig } from '../../shared/types';
-import { api } from '../lib/api';
+import { api, museumImg } from '../lib/api';
+import { frTypo } from '../../shared/typo';
 
 // ---------- Icônes (traits simples, 24 px) ----------
 const paths: Record<string, ReactNode> = {
@@ -130,10 +131,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export const useToast = () => useContext(ToastCtx);
 
 // ---------- Cartel ----------
-export function Cartel({ entry, saved }: { entry: Pick<ArtworkEntry, 'artist' | 'title' | 'date' | 'technique' | 'dimensions' | 'institution' | 'inventory' | 'movement'> & { artistBio?: string }; saved?: boolean }) {
+export function Cartel({ entry, saved }: { entry: Pick<ArtworkEntry, 'artist' | 'title' | 'date' | 'technique' | 'dimensions' | 'institution' | 'inventory' | 'movement'> & { artistBio?: string | null }; saved?: boolean }) {
   const rows: [string, string | null | undefined][] = [
     ['Technique', entry.technique],
-    ['Dimensions', entry.dimensions],
+    ['Dimensions', frDecimals(entry.dimensions)],
     ['Mouvement', entry.movement],
     ['Conservation', entry.institution],
     ['Inventaire', entry.inventory]
@@ -141,10 +142,10 @@ export function Cartel({ entry, saved }: { entry: Pick<ArtworkEntry, 'artist' | 
   return (
     <div className="cartel" aria-label="Cartel de l’œuvre">
       <div className="artist">{entry.artist}</div>
-      {entry.artistBio && <div className="artist-bio">{entry.artistBio}</div>}
+      {entry.artistBio && <div className="artist-bio">{frTypo(entry.artistBio)}</div>}
       <h1 className="work-title">
-        {entry.title}
-        {entry.date ? <span style={{ fontStyle: 'normal' }}>, {entry.date}</span> : null}
+        {frTypo(entry.title)}
+        {entry.date ? <span style={{ fontStyle: 'normal' }}>, {frTypo(lowerFirst(entry.date))}</span> : null}
       </h1>
       {rows.some(([, v]) => v) && (
         <dl>
@@ -153,7 +154,7 @@ export function Cartel({ entry, saved }: { entry: Pick<ArtworkEntry, 'artist' | 
             .map(([k, v]) => (
               <div key={k} style={{ display: 'contents' }}>
                 <dt>{k}</dt>
-                <dd>{v}</dd>
+                <dd>{frTypo(v)}</dd>
               </div>
             ))}
         </dl>
@@ -223,10 +224,16 @@ export function WorkTile({
   saved?: boolean;
   contain?: boolean;
 }) {
+  const [broken, setBroken] = useState(false);
+  const src = museumImg(img);
   const inner = (
     <>
       <div className={`work-frame ${contain ? 'contain' : ''}`}>
-        {img ? <img src={img} alt="" loading="lazy" /> : <span className="t-small" style={{ color: 'var(--wall-ink-2)' }}>Sans image</span>}
+        {src && !broken ? (
+          <img src={src} alt="" loading="lazy" onError={() => setBroken(true)} />
+        ) : (
+          <span className="t-small" style={{ color: 'var(--wall-ink-2)' }}>Image indisponible</span>
+        )}
       </div>
       {saved && (
         <span className="seal-mark">
@@ -257,4 +264,14 @@ export function DemoRibbon() {
   const { config } = useConfig();
   if (!config?.demo) return null;
   return <div className="demo-ribbon">Mode démonstration : identification simulée, aucune IA connectée</div>;
+}
+
+/** « Vers 1830 » après une virgule devient « vers 1830 » (sauf sigle ou nom propre en capitales). */
+function lowerFirst(s: string) {
+  return /^[A-ZÀ-Ý][a-zà-ÿ]/.test(s) && /^(Vers|Avant|Après|Début|Fin|Milieu|Entre)\b/.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
+}
+
+/** Dimensions : virgule décimale française (25.4 × 37.6 cm devient 25,4 × 37,6 cm). */
+function frDecimals(s?: string | null) {
+  return s ? s.replace(/(\d)\.(\d)/g, '$1,$2') : s;
 }
