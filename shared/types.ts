@@ -166,6 +166,7 @@ export type SectionId =
   | 'demarche'
   | 'provenance'
   | 'localisation'
+  | 'cartel'
   | 'inscriptions';
 
 export interface EntrySection {
@@ -209,6 +210,22 @@ export interface ArtworkEntry {
   generatedAt: string;
   usage?: UsageInfo;
   warnings: string[];
+  /** Fiche partagée : identifiant de l'œuvre et statut de validation par l'administrateur. */
+  verification?: { workId: string; status: WorkStatus; reused: boolean };
+}
+
+export type WorkStatus = 'provisoire' | 'validee' | 'rejetee';
+
+export interface WorkSummary {
+  workId: string;
+  status: WorkStatus;
+  title: string;
+  artist: string;
+  imageUrl?: string;
+  uses: number;
+  reports: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface EntryRequest {
@@ -234,6 +251,7 @@ export interface ServerConfig {
   models: { vision: string | null; text: string | null; chat: string | null };
   sources: { id: SourceId; label: string; enabled: boolean; note?: string }[];
   accessCodeRequired: boolean;
+  storage: 'postgres' | 'memoire';
   limits: { perMinute: number; dailyBudgetUsd: number; spentTodayUsd: number };
   costPerScanUsd: { low: number; high: number } | null;
 }

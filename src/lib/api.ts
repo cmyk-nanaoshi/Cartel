@@ -7,6 +7,8 @@ import type {
   MapPlace,
   ServerConfig,
   SourceRecord,
+  WorkStatus,
+  WorkSummary,
   UsageInfo
 } from '../../shared/types';
 import { getSetting } from './db';
@@ -57,6 +59,47 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 90_0
   }
 }
 
+async function adminHeaders(extra: Record<string, string> = {}) {
+  const code = await getSetting<string>('adminCode');
+  return { ...(code ? { 'x-admin-code': code } : {}), ...extra };
+}
+
+export interface AdminWork {
+  workId: string;
+  status: WorkStatus;
+  entry: ArtworkEntry;
+  recordIds: string[];
+  uses: number;
+  createdAt: string;
+  updatedAt: string;
+  validatedAt: string | null;
+  reports: { reason: string; createdAt: string }[];
+}
+export type AdminCounts = Record<WorkStatus | 'signalees', number>;
+
+export const admin = {
+  async list(status?: WorkStatus | 'signalees') {
+    return request<{ works: WorkSummary[]; counts: AdminCounts; storage: string }>(
+      `/api/admin/works${status ? `?status=${status}` : ''}`,
+      { headers: await adminHeaders() },
+      30_000
+    );
+  },
+  async get(id: string) {
+    return request<AdminWork>(`/api/admin/works/${encodeURIComponent(id)}`, { headers: await adminHeaders() }, 30_000);
+  },
+  async setStatus(id: string, status: WorkStatus) {
+    return request<{ ok: true }>(
+      `/api/admin/works/${encodeURIComponent(id)}/status`,
+      { method: 'POST', body: JSON.stringify({ status }), headers: await adminHeaders({ 'content-type': 'application/json' }) },
+      30_000
+    );
+  },
+  async remove(id: string) {
+    return request<{ ok: true }>(`/api/admin/works/${encodeURIComponent(id)}`, { method: 'DELETE', headers: await adminHeaders() }, 30_000);
+  }
+};
+
 export const api = {
   config: () => request<ServerConfig>('/api/config', {}, 10_000),
 
@@ -77,6 +120,14 @@ export const api = {
       '/api/entry',
       { method: 'POST', body: JSON.stringify(req), headers: { 'content-type': 'application/json' } },
       120_000
+    );
+  },
+
+  report(workId: string, reason: string) {
+    return request<{ ok: true }>(
+      '/api/report',
+      { method: 'POST', body: JSON.stringify({ workId, reason }), headers: { 'content-type': 'application/json' } },
+      30_000
     );
   },
 

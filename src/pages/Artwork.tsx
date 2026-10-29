@@ -8,6 +8,7 @@ import { api, museumImg } from '../lib/api';
 import { frTypo } from '../../shared/typo';
 import { session } from '../lib/session';
 import { BackLink, Cartel, Icon, Notice, useToast } from '../components/ui';
+import { createPortal } from 'react-dom';
 import { t } from '../i18n';
 import { ObservationsSection } from '../components/Observations';
 import { lotFromText } from '../../shared/observations';
@@ -53,6 +54,7 @@ export function Artwork() {
   const [reproBroken, setReproBroken] = useState(false);
   const [brokenComparables, setBrokenComparables] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   // Chargement : collection, puis cache local, puis génération.
   useEffect(() => {
@@ -66,23 +68,22 @@ export function Artwork() {
         setEntry(saved.entry);
         return;
       }
+      // Fiche en cache affichée tout de suite ; si l'œuvre vient d'être ouverte, on redemande au serveur :
+      // une fiche partagée ne coûte rien à resservir et peut avoir été validée ou corrigée entre-temps.
       const cached = await db.entries.get(key);
-      if (cached) {
-        setEntry(cached.entry);
-        return;
-      }
+      if (cached) setEntry(cached.entry);
       if (!state.candidate) {
-        setError('Cette fiche n’est pas disponible hors de la session où elle a été ouverte. Relancez l’analyse ou la recherche.');
+        if (!cached) setError('Cette fiche n’est pas disponible hors de la session où elle a été ouverte. Relancez l’analyse ou la recherche.');
         return;
       }
-      setLoading(true);
+      if (!cached) setLoading(true);
       try {
         const e = await api.entry({ candidate: state.candidate, vision: state.vision, label: state.label });
         if (cancelled) return;
         await db.entries.put({ id: key, entry: e, createdAt: Date.now() });
         setEntry(e);
       } catch (e: any) {
-        if (!cancelled) setError(e.message);
+        if (!cancelled && !cached) setError(e.message);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -204,6 +205,11 @@ export function Artwork() {
         <div className="grid" style={{ marginTop: 8 }}>
           <aside className="span-all lg-span-4 stack-16">
             <Cartel entry={{ ...entry, artistBio }} saved={!!saved} />
+            {entry.verification?.status === 'validee' && (
+              <p className="verified">
+                <Icon name="check" size={16} /> Fiche vérifiée par Cartel
+              </p>
+            )}
             <p className="t-small t-muted">{OBJECT_KIND_LABEL[entry.objectKind]}</p>
             {saved && (
               <div className="stack-8">
@@ -329,6 +335,11 @@ export function Artwork() {
                     : 'Fiche construite à partir des champs du cartel et des notices, sans rédaction par IA.'
                 )}
               </p>
+              {entry.verification && (
+                <button className="linkbtn" style={{ marginTop: 12 }} onClick={() => setReporting(true)}>
+                  Signaler une erreur dans cette fiche
+                </button>
+              )}
             </section>
 
             {/* Une suggestion sans image est contre-productive : seules les œuvres dont l'image s'affiche restent. */}
@@ -375,6 +386,7 @@ export function Artwork() {
       </div>
 
       {editing && saved && <EditSheet item={saved} onClose={() => setEditing(false)} />}
+      {reporting && entry.verification && <ReportSheet workId={entry.verification.workId} onClose={() => setReporting(false)} />}
     </main>
   );
 }
@@ -469,5 +481,49 @@ function Refs({ ids }: { ids: number[] }) {
         </span>
       ))}
     </sup>
+  );
+}
+
+function ReportSheet({ workId, onClose }: { workId: string; onClose: () => void }) {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
+  async function send() {
+    if (!reason.trim()) return;
+    setBusy(true);
+    try {
+      await api.report(workId, reason.trim());
+      toast('Merci, le signalement a été transmis');
+      onClose();
+    } catch (e: any) {
+      toast(e.message);
+      setBusy(false);
+    }
+  }
+  return createPortal(
+    <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="report-title" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <form
+        className="sheet-body stack-16"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void send();
+        }}
+      >
+        <div className="row-between" style={{ alignItems: 'center' }}>
+          <h2 id="report-title" className="t-head">Signaler une erreur</h2>
+          <button type="button" className="iconbtn" onClick={onClose} aria-label="Fermer">
+            <Icon name="close" />
+          </button>
+        </div>
+        <label className="field">
+          <span>Qu’est-ce qui ne va pas ?</span>
+          <textarea className="textarea" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} placeholder="Mauvaise œuvre, date erronée, phrase fausse…" />
+        </label>
+        <button type="submit" className="btn btn-block" disabled={busy || !reason.trim()}>
+          Envoyer
+        </button>
+      </form>
+    </div>,
+    document.body
   );
 }

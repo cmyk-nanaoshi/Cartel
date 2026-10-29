@@ -54,6 +54,7 @@ const paths: Record<string, ReactNode> = {
   ),
   trash: <path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
   lock: (
     <>
       <rect x="5" y="11" width="14" height="9" rx="2" />

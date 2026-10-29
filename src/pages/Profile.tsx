@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { db, exportBackup, getSetting, importBackup, setSetting } from '../lib/db';
 import { download } from '../lib/export';
 import { Notice, useConfig, useToast } from '../components/ui';
@@ -8,6 +9,7 @@ export function Profile() {
   const { config, error, reload } = useConfig();
   const toast = useToast();
   const [code, setCode] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [geo, setGeo] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
   const [counts, setCounts] = useState({ artworks: 0, analyses: 0, entries: 0 });
@@ -16,6 +18,7 @@ export function Profile() {
   useEffect(() => {
     (async () => {
       setCode((await getSetting<string>('accessCode')) ?? '');
+      setIsAdmin(!!(await getSetting<string>('adminCode')));
       setGeo((await getSetting<boolean>('saveLocation')) ?? false);
       setCounts({ artworks: await db.artworks.count(), analyses: await db.analyses.count(), entries: await db.entries.count() });
     })();
@@ -189,6 +192,12 @@ export function Profile() {
           </div>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={restore} />
 
+          {/* Lien visible seulement sur l'appareil où le code d'administration a été saisi (sinon : /admin). */}
+          {isAdmin && (
+            <Link className="btn btn-ghost btn-small" to="/admin">
+              Administration des fiches
+            </Link>
+          )}
           <p className="t-small t-faint" style={{ paddingTop: 16 }}>
             Cartel 0.1. Données des notices : Joconde (Licence Ouverte), Wikidata (CC0), Art Institute of Chicago et Met (CC0). Fond de carte © OpenStreetMap.
           </p>

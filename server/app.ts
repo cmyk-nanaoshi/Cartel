@@ -13,11 +13,15 @@ import { aicRandom } from './sources/aic.js';
 import { wikidataPlacesAround } from './sources/wikidata.js';
 import { FIXTURE_RECORDS } from './sources/fixtures.js';
 import { allowedImageUrl, fetchImage } from './pipeline/visual.js';
+import { createStore, type WorkStore } from './lib/store.js';
+import { timingSafeEqual } from 'node:crypto';
+import type { WorkStatus } from '../shared/types.js';
 
 export interface AppDeps {
   cfg?: AppConfig;
   provider?: AIProvider;
   cache?: Cache;
+  store?: WorkStore;
 }
 
 export function createApp(deps: AppDeps = {}) {
@@ -26,7 +30,10 @@ export function createApp(deps: AppDeps = {}) {
   const limiter = new Limiter(cfg.limits.perMinute, cfg.limits.dailyBudgetUsd);
   const provider = deps.provider ?? createProvider(cfg);
   const sources = new SourceRegistry(cfg, cache);
-  const svc = new Services(provider, sources, cache, limiter, cfg.limits.maxImageBytes);
+  const store = deps.store ?? createStore(cfg.databaseUrl);
+  const svc = new Services(provider, sources, cache, limiter, cfg.limits.maxImageBytes, store);
+  // Prépare la base dès le démarrage, sans bloquer : la première requête attendra si besoin.
+  void store.counts().catch((e) => console.error('Base des fiches : initialisation impossible.', e?.message ?? e));
 
   const app = new Hono();
 
@@ -93,6 +100,7 @@ export function createApp(deps: AppDeps = {}) {
         : { vision: provider.models.vision, text: provider.models.text, chat: provider.models.chat },
       sources: sources.describe(),
       accessCodeRequired: !!cfg.accessCode,
+      storage: store.kind,
       limits: { perMinute: cfg.limits.perMinute, dailyBudgetUsd: cfg.limits.dailyBudgetUsd, spentTodayUsd: limiter.spentToday() },
       costPerScanUsd: provider.demo ? null : scanCostRange(provider.models.vision, provider.models.text)
     };
@@ -136,6 +144,56 @@ export function createApp(deps: AppDeps = {}) {
     });
   });
 
+  // Signalement d'une erreur sur une fiche partagée, par n'importe quel visiteur.
+  app.post('/api/report', limited, async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { workId?: string; reason?: string } | null;
+    const reason = String(body?.reason ?? '').trim().slice(0, 1000);
+    if (!body?.workId || !reason) throw new InputError('Précisez ce qui ne va pas.');
+    const ok = await store.report(String(body.workId), reason);
+    if (!ok) throw new InputError('Fiche introuvable.', 404);
+    return c.json({ ok: true });
+  });
+
+  // ---------- Administration (validation des fiches) ----------
+  const isAdmin = (c: any) => {
+    if (!cfg.adminCode) return false;
+    const given = Buffer.from(String(c.req.header('x-admin-code') ?? ''));
+    const want = Buffer.from(cfg.adminCode);
+    return given.length === want.length && timingSafeEqual(given, want);
+  };
+  app.use('/api/admin/*', async (c, next) => {
+    if (!cfg.adminCode) return c.json({ error: 'Administration non configurée (ADMIN_CODE manquant).' }, 503);
+    if (!isAdmin(c)) {
+      await new Promise((r) => setTimeout(r, 400)); // freine les essais au hasard
+      return c.json({ error: 'Code d’administration incorrect.', code: 'admin' }, 401);
+    }
+    await next();
+  });
+  const STATUSES = ['provisoire', 'validee', 'rejetee'] as const;
+  app.get('/api/admin/works', async (c) => {
+    const q = c.req.query('status');
+    const status = q === 'signalees' || (STATUSES as readonly string[]).includes(q ?? '') ? (q as WorkStatus | 'signalees') : undefined;
+    const [works, counts] = await Promise.all([
+      store.list({ status, limit: Number(c.req.query('limit') ?? 50), offset: Number(c.req.query('offset') ?? 0) }),
+      store.counts()
+    ]);
+    return c.json({ works, counts, storage: store.kind });
+  });
+  app.get('/api/admin/works/:id', async (c) => {
+    const w = await store.get(c.req.param('id'));
+    return w ? c.json(w) : c.json({ error: 'Fiche introuvable.' }, 404);
+  });
+  app.post('/api/admin/works/:id/status', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { status?: string } | null;
+    if (!(STATUSES as readonly string[]).includes(body?.status ?? '')) throw new InputError('Statut invalide.');
+    const ok = await store.setStatus(c.req.param('id'), body!.status as WorkStatus);
+    return ok ? c.json({ ok: true }) : c.json({ error: 'Fiche introuvable.' }, 404);
+  });
+  app.delete('/api/admin/works/:id', async (c) => {
+    const ok = await store.remove(c.req.param('id'));
+    return ok ? c.json({ ok: true }) : c.json({ error: 'Fiche introuvable.' }, 404);
+  });
+
   app.get('/api/search', async (c) => {
     const title = c.req.query('title') || undefined;
     const artist = c.req.query('artist') || undefined;
@@ -175,5 +233,5 @@ export function createApp(deps: AppDeps = {}) {
     }
   });
 
-  return { app, svc, cfg };
+  return { app, svc, cfg, store };
 }

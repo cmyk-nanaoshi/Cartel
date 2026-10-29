@@ -13,6 +13,7 @@ import { Collection } from './pages/Collection';
 import { Search } from './pages/Search';
 import { Random } from './pages/Random';
 import { Profile } from './pages/Profile';
+import { Admin } from './pages/Admin';
 
 // La carte (Leaflet) n'est chargée qu'à la demande.
 const MapPage = lazy(() => import('./pages/MapPage'));
@@ -70,6 +71,7 @@ export function App() {
                 <Route path="/hasard" element={<Random />} />
                 <Route path="/carte" element={<MapPage />} />
                 <Route path="/profil" element={<Profile />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<div className="page">Page introuvable.</div>} />
               </Routes>
             </Suspense>

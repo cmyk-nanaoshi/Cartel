@@ -59,6 +59,8 @@ export function loadConfig() {
       maxImageBytes: num('MAX_IMAGE_BYTES', 4 * 1024 * 1024)
     },
     accessCode: str('APP_ACCESS_CODE'),
+    adminCode: str('ADMIN_CODE'),
+    databaseUrl: str('DATABASE_URL'),
     cacheDir: str('CACHE_DIR', '.cache'),
     port: num('PORT', 8787)
   };

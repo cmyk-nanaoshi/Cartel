@@ -23,6 +23,7 @@ import { ENTRY_SYSTEM, IDENTIFY_SYSTEM, LABEL_SYSTEM, chatSystem, sourcesBlock }
 import type { Cache } from '../lib/cache.js';
 import { sha256 } from '../lib/cache.js';
 import type { Limiter } from '../lib/limits.js';
+import { MemoryStore, workIdentity, type WorkStore } from '../lib/store.js';
 import type { SourceRegistry } from '../sources/index.js';
 import { buildCandidate, confidenceLabel, decideStatus, rankRecords } from './scoring.js';
 import { fetchImage, fingerprintQuery, fingerprintReference, similarity } from './visual.js';
@@ -46,6 +47,7 @@ const SECTION_TITLES: Record<SectionId, string> = {
   demarche: 'La démarche de l’artiste',
   provenance: 'Histoire et provenance',
   localisation: 'Conservée par',
+  cartel: 'Le cartel',
   inscriptions: 'Inscriptions et marques'
 };
 const SECTION_ORDER = Object.keys(SECTION_TITLES) as SectionId[];
@@ -58,7 +60,8 @@ export class Services {
     public sources: SourceRegistry,
     private cache: Cache,
     private limiter: Limiter,
-    private maxImageBytes: number
+    private maxImageBytes: number,
+    public store: WorkStore = new MemoryStore()
   ) {}
 
   private spend(u?: UsageInfo) {
@@ -217,18 +220,57 @@ export class Services {
     return this.sources.searchAll({ ...q, limit: 4 });
   }
 
+  /**
+   * Fiche d'une œuvre, en deux couches.
+   * 1. La fiche de l'œuvre, commune à tous : resservie depuis la base si elle existe déjà (validée ou
+   *    en attente), sinon rédigée une fois par l'IA puis gardée pour les visiteurs suivants.
+   * 2. La couche de l'exemplaire, propre à chaque scan et sans IA : cartel lu sur place (qui fait foi),
+   *    inscriptions relevées sur la photo.
+   */
   async entry(req: EntryRequest): Promise<ArtworkEntry> {
     const c = req.candidate;
     if (!c?.title || !c?.artist) throw new InputError('Titre et artiste requis pour rédiger une fiche.');
-    // Le cartel lu sur place est la première source : il fait foi pour l'exemplaire photographié.
+    const notices = (c.records ?? []).filter((r) => r.source !== 'cartel').slice(0, 6);
     const cartel = labelRecord(req.label);
-    const records = [...(cartel ? [cartel] : []), ...(c.records ?? []).filter((r) => r.source !== 'cartel').slice(0, 6)];
-    const key = `entry:v2:${this.ai.name}:${c.key}:${records.map((r) => r.id).join(',')}`;
-    const hit = await this.cache.get<ArtworkEntry>(key);
-    if (hit) return hit;
+    const shared = await this.sharedEntry(c, notices, cartel, req);
+    return applyScanLayer(shared, cartel, req);
+  }
 
-    const comparables = await this.comparables(c.artist, c.title, records);
-    const base = baseEntry(c, records, comparables, req, this.ai);
+  private async sharedEntry(
+    c: EntryRequest['candidate'],
+    notices: SourceRecord[],
+    cartel: SourceRecord | null,
+    req: EntryRequest
+  ): Promise<ArtworkEntry> {
+    const { workId, aliasIds } = workIdentity(notices, c.key);
+    // Sans notice de musée, la fiche s'appuie sur le cartel de ce visiteur : elle n'est pas partageable.
+    const shareable = notices.length > 0 && !this.ai.demo;
+
+    // La base fait office de cache pour les fiches partageables : une fiche rejetée doit être réécrite,
+    // pas resservie depuis la mémoire. Le cache local ne sert que si la base est injoignable.
+    let storeOk = false;
+    if (shareable) {
+      try {
+        const found = await this.store.find(aliasIds);
+        storeOk = true;
+        if (found && found.status !== 'rejetee') {
+          void this.store.touch(found.workId).catch(() => {});
+          return { ...found.entry, verification: { workId: found.workId, status: found.status, reused: true } };
+        }
+      } catch (e) {
+        console.error('Base des fiches indisponible :', e);
+      }
+    }
+
+    const sources = shareable ? notices : [...(cartel ? [cartel] : []), ...notices];
+    const key = `entry:v3:${this.ai.name}:${c.key}:${sources.map((r) => r.id).join(',')}`;
+    if (!storeOk) {
+      const hit = await this.cache.get<ArtworkEntry>(key);
+      if (hit) return hit;
+    }
+
+    const comparables = await this.comparables(c.artist, c.title, sources);
+    const base = baseEntry(c, sources, comparables, { ...req, label: shareable ? undefined : req.label, vision: req.vision && { ...req.vision, inscriptions: [] } }, this.ai);
 
     if (this.ai.demo) {
       base.warnings.push('Mode démonstration : fiche construite uniquement à partir des notices, sans rédaction par IA.');
@@ -237,13 +279,15 @@ export class Services {
     }
 
     this.ensureBudget();
-    const { text, ids } = sourcesBlock(records);
+    const { text, ids } = sourcesBlock(sources);
     const context = [
       `Œuvre retenue : « ${c.title} », ${c.artist}${c.date ? `, ${c.date}` : ''}.`,
       req.vision ? `Nature observée sur la photo : ${req.vision.objectKind}. Observation : ${req.vision.description}` : '',
-      req.vision?.inscriptions?.length ? `Inscriptions visibles : ${req.vision.inscriptions.join(' | ')}` : '',
-      cartel ? 'Le cartel photographié sur place figure dans les sources : il fait foi.' : '',
-      records.length ? '' : 'Aucune source n’a été trouvée : toutes les phrases doivent être de type observation, interpretation ou hypothese.',
+      shareable
+        ? 'Cette fiche sera réutilisée pour tous les visiteurs qui photographieront cette œuvre : décris l’œuvre elle-même, jamais le cadre, le mur, le reflet, le cartel ni les conditions de la photo.'
+        : '',
+      !shareable && cartel ? 'Le cartel photographié sur place figure dans les sources : il fait foi.' : '',
+      sources.length ? '' : 'Aucune source n’a été trouvée : toutes les phrases doivent être de type observation, interpretation ou hypothese.',
       '',
       'Sources :',
       text
@@ -270,9 +314,8 @@ export class Services {
         ...base,
         objectKind: (OBJECT_KINDS.includes(data.objectKind) ? data.objectKind : base.objectKind) as ObjectKind,
         movement: data.movement ?? base.movement ?? null,
-        // Le cartel est déjà en français et fait foi ; sinon, la traduction proposée par le modèle.
-        technique: (cartel?.medium ?? data.technique ?? base.technique) || null,
-        artistLine: (req.label?.artistDates ? cleanArtistDates(req.label.artistDates) : data.artistLine) || base.artistLine || null,
+        technique: (data.technique ?? base.technique) || null,
+        artistLine: data.artistLine || base.artistLine || null,
         sections: normalizeSections(data.sections, ids),
         aiWritten: true,
         model: usage.model,
@@ -280,6 +323,15 @@ export class Services {
       };
       if (entry.sections.some((s) => s.claims.some((cl) => cl.unsourced)))
         entry.warnings.push('Certaines affirmations présentées comme des faits n’étaient étayées par aucune source : elles sont signalées comme non sourcées.');
+      if (shareable) {
+        try {
+          const stored = { ...entry, usage: undefined, verification: undefined };
+          await this.store.save(workId, stored, aliasIds);
+          entry.verification = { workId, status: 'provisoire', reused: false };
+        } catch (e) {
+          console.error('Fiche non enregistrée dans la base :', e);
+        }
+      }
       await this.cache.set(key, entry);
       return entry;
     } catch (e) {
@@ -547,4 +599,51 @@ export async function imageLoads(url: string, userAgent: string): Promise<boolea
   imageOk.set(url, { ok, at: Date.now() });
   if (imageOk.size > 2000) imageOk.delete(imageOk.keys().next().value!);
   return ok;
+}
+
+/**
+ * Couche de l'exemplaire, ajoutée à chaque scan sans appel à l'IA : le cartel lu sur place devient la
+ * source n° 1 et fait foi pour l'en-tête (date, technique, dimensions, inventaire) ; les inscriptions
+ * relevées sur la photo s'ajoutent comme observations.
+ */
+export function applyScanLayer(shared: ArtworkEntry, cartel: SourceRecord | null, req: EntryRequest): ArtworkEntry {
+  const e: ArtworkEntry = structuredClone(shared);
+  const label = req.label;
+  if (cartel && !e.sources.some((s) => s.id === cartel.id)) {
+    e.sources = [cartel, ...e.sources];
+    const f = (text: string): Claim => ({ text, kind: 'fait', sources: [cartel.id] });
+    const claims: Claim[] = [];
+    if (cartel.date) claims.push(f(`Daté sur le cartel ${lowerFirstWord(cartel.date)}.`));
+    if (cartel.medium) claims.push(f(`${cartel.medium}${cartel.dimensions ? `, ${cartel.dimensions}` : ''}.`));
+    else if (cartel.dimensions) claims.push(f(`Dimensions données par le cartel, ${cartel.dimensions}.`));
+    if (cartel.institution) claims.push(f(`${cartel.institution}${cartel.inventory ? `, inv. ${cartel.inventory}` : ''}.`));
+    if (cartel.credit) claims.push(f(`${cartel.credit}.`));
+    if (claims.length) {
+      const section: EntrySection = { id: 'cartel', title: SECTION_TITLES.cartel, claims };
+      const idx = e.sections.findIndex((s) => s.id !== 'resume');
+      e.sections.splice(idx < 0 ? e.sections.length : idx, 0, section);
+    }
+    e.date = cartel.date ?? e.date;
+    e.technique = cartel.medium ?? e.technique;
+    e.dimensions = cartel.dimensions ?? e.dimensions;
+    if (cartel.inventory) {
+      e.inventory = cartel.inventory;
+      e.institution = cartel.institution ?? e.institution;
+    }
+    if (label?.artistDates) e.artistLine = cleanArtistDates(label.artistDates);
+  }
+  const ins = req.vision?.inscriptions ?? [];
+  if (ins.length && !e.sections.some((s) => s.id === 'inscriptions')) {
+    e.sections.push({
+      id: 'inscriptions',
+      title: SECTION_TITLES.inscriptions,
+      claims: [{ text: `Relevé sur la photo : ${ins.join(' ; ')}.`, kind: 'observation', sources: [] }]
+    });
+  }
+  return e;
+}
+
+/** « Vers 1830 » devient « vers 1830 » en milieu de phrase. */
+function lowerFirstWord(s: string) {
+  return /^(Vers|Avant|Après|Début|Fin|Milieu|Entre)\b/.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
 }
