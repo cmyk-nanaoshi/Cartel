@@ -59,6 +59,14 @@ class CartelDB extends Dexie {
     });
     // v2 : lieux où le visiteur a vu une œuvre (traçabilité).
     this.version(2).stores({ observations: 'id, artworkKey, date, updatedAt' });
+    // v3 : les fiches et analyses en cache datent d'avant « le cartel fait foi » ; on les régénère.
+    // La collection, les notes et les observations sont conservées.
+    this.version(3)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx.table('entries').clear();
+        await tx.table('analyses').clear();
+      });
   }
 }
 
