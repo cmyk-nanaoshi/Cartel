@@ -10,25 +10,26 @@
 
 :root {
   /* Palette : couleurs traditionnelles japonaises, CMJN du nuancier converti en sRGB (profil FOGRA39).
-     海松藍 Miru-ai C100 M30 J64 N50 → #00544C ; 臙脂色 Enji-iro C0 M100 J75 N16 → #C91F37.
+     Vert profond C80 M50 J60 N70 → #2C3B38 (FOGRA39, intention colorimétrique relative), retenu le 29.10.2026
+     à la place de 海松藍 Miru-ai C100 M30 J64 N50 → #00544C ; 臙脂色 Enji-iro C0 M100 J75 N16 → #C91F37.
      Règle : le blanc porte le contraste. Le carmin n'est jamais posé sur le vert, seulement sur du blanc. */
-  --green: #00544c;
-  --green-deep: #003f39;
+  --green: #2c3b38;
+  --green-deep: #202b29;
   --carmine: #c91f37;
   --white: #ffffff;
 
   --paper: var(--green);          /* fond général */
-  --ink: var(--white);            /* texte sur le vert : 8,9:1 */
-  --ink-2: #cfe1dd;               /* texte secondaire : 6,5:1 */
-  --ink-3: #b7d3cd;               /* texte tertiaire : 5,6:1 */
-  --rule: #2f716a;
+  --ink: var(--white);            /* texte sur le vert : 11,7:1 */
+  --ink-2: #d2dcd9;               /* texte secondaire : 8,4:1 */
+  --ink-3: #aebdb9;               /* texte tertiaire : 6,0:1 */
+  --rule: #4b5d59;
   --wall: var(--green-deep);      /* mur derrière les œuvres */
   --wall-ink: var(--white);
-  --wall-ink-2: #cfe1dd;
+  --wall-ink-2: #d2dcd9;
   --surface: var(--white);        /* cartels, champs, cartes blanches */
   --on-surface: var(--green);     /* texte sur blanc : 8,9:1 */
-  --on-surface-2: #4d6f6a;        /* texte secondaire sur blanc : 5,5:1 */
-  --surface-rule: #d9e5e2;
+  --on-surface-2: #5b6b67;        /* texte secondaire sur blanc : 5,6:1 */
+  --surface-rule: #dde3e1;
   --brass: var(--white);          /* renvois aux sources */
   --dot: var(--carmine);          /* pastille de collection, uniquement sur blanc */
   --ok: #a8e6cf;
@@ -128,7 +129,7 @@ h1, h2, h3, p { margin: 0; }
 .back:hover { color: var(--ink); }
 
 /* ---------- Boutons ---------- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 20px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: var(--radius-btn); font-weight: 600; text-decoration: none; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; justify-content: center; text-align: center; gap: 8px; min-height: 48px; padding: 12px 20px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: var(--radius-btn); font-weight: 600; text-decoration: none; cursor: pointer; }
 .btn:hover { filter: brightness(1.15); }
 .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--ink); }
@@ -293,8 +294,8 @@ sup { line-height: 0; }
 .map-panel .chip[aria-pressed='true'] { background: var(--green-deep); color: var(--white); border-color: var(--white); }
 .map-status { position: absolute; z-index: 500; left: 12px; right: 64px; bottom: 28px; max-width: 520px; }
 .pin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
-.pin-musee { background: #00544c; }
-.pin-oeuvre { background: #ffffff; border-color: #00544c; }
+.pin-musee { background: #2c3b38; }
+.pin-oeuvre { background: #ffffff; border-color: #2c3b38; }
 .pin-mine { background: #c91f37; width: 16px; height: 16px; }
 .leaflet-container { font-family: var(--sans); background: var(--paper); }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { color: var(--on-surface); }
