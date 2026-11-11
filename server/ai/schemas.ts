@@ -36,6 +36,10 @@ export const identifySchema = obj({
     anyOf: [obj(labelFields), { type: 'null' }],
     description: 'Cartel du musée visible sur la photo, lu champ par champ, tel qu’il est écrit. null si aucun cartel n’est lisible.'
   },
+  labelBox: {
+    anyOf: [obj({ left: { type: 'number' }, top: { type: 'number' }, width: { type: 'number' }, height: { type: 'number' } }), { type: 'null' }],
+    description: 'Position du cartel dans l’image, même s’il est trop petit pour être lu : fractions de la largeur et de la hauteur entre 0 et 1, depuis le coin haut gauche. null s’il n’y a pas de cartel.'
+  },
   imageQualityIssue: { ...nstr, description: 'Problème empêchant l’analyse (flou, reflet, cadrage), sinon null.' },
   objectKind: { type: 'string', enum: OBJECT_KINDS },
   description: { ...str, description: 'Description factuelle de ce qui est visible, 2 à 4 phrases.' },
@@ -53,6 +57,8 @@ export const identifySchema = obj({
       distinguishing: { ...str, description: 'Ce qui permettrait de la distinguer des autres hypothèses, versions ou copies.' }
     })
   },
+  signedArtist: { ...nstr, description: 'Nom de l’artiste tel qu’il est lu dans une signature sur l’œuvre ou sur le cartel, sans compléter de mémoire. null si aucun nom n’est lisible.' },
+  styleLead: { ...nstr, description: 'Piste prudente quand l’œuvre précise n’est pas reconnue : mouvement, école, période ou artiste dont le style est proche (« proche de l’abstraction lyrique »). null si rien de solide.' },
   searchQueries: { ...strArr, description: 'Requêtes courtes pour vérifier dans des catalogues (titre original, titre anglais, artiste).' }
 });
 

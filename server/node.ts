@@ -23,6 +23,19 @@ if (existsSync('dist')) {
   app.get('*', serveStatic({ path: './dist/index.html' }));
 }
 
+// Bilan des sources au démarrage, visible dans les journaux de Render.
+setTimeout(async () => {
+  for (const a of svc.sources.adapters.filter((x) => x.enabled)) {
+    const t = Date.now();
+    try {
+      const r = await a.search({ title: 'Les Nymphéas', artist: 'Claude Monet', limit: 3 }, svc.sources.http);
+      console.log(`[sources] ${a.id} : ${r.length} notice(s) en ${Date.now() - t} ms`);
+    } catch (e: any) {
+      console.log(`[sources] ${a.id} : ÉCHEC ${e?.message ?? e}`);
+    }
+  }
+}, 3000);
+
 serve({ fetch: app.fetch, port: cfg.port }, (info) => {
   console.log(`Cartel API sur http://localhost:${info.port}  (fournisseur IA : ${svc.ai.name}${svc.ai.demo ? ', mode démonstration' : ''})`);
 });

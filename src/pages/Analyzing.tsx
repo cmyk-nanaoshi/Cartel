@@ -45,7 +45,7 @@ export function Analyzing() {
       session.set({ photoHash: hash });
       // Une photo déjà analysée n'est pas renvoyée au serveur.
       const local = await db.analyses.get(hash);
-      const response = local?.response ?? (await api.identify(s.photo!));
+      const response = local?.response ?? (await api.identify(s.analysisPhoto ?? s.photo!));
       if (!local) await db.analyses.put({ id: hash, response, createdAt: Date.now() });
       set(1, 'done');
       session.set({ response });

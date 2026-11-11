@@ -20,7 +20,7 @@ export const fr = {
   'results.choose': 'Ouvrir la fiche',
   'results.retry': 'Reprendre la photo',
   'entry.save': 'Ajouter à ma collection',
-  'entry.saved': 'Dans ma collection',
+  'entry.saved': 'Retirer de ma collection',
   'entry.ask': 'Poser une question',
   'entry.sources': 'Sources',
   'entry.comparables': 'Du même artiste',

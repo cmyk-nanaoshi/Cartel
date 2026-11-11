@@ -67,13 +67,27 @@ export interface VisionAnalysis {
   isArtwork: boolean;
   /** Cartel visible sur la photo de l'œuvre, lu champ par champ. null s'il n'y en a pas. */
   label: LabelFields | null;
+  /** Position du cartel dans la photo (fractions 0-1), pour le relire en pleine résolution. */
+  labelBox?: { left: number; top: number; width: number; height: number } | null;
   imageQualityIssue: string | null;
   objectKind: ObjectKind;
   description: string;
   visibleText: string[];
   inscriptions: string[];
   hypotheses: VisionHypothesis[];
+  /** Nom lu dans une signature ou sur le cartel. */
+  signedArtist?: string | null;
+  /** Piste stylistique prudente, jamais présentée comme une identification. */
+  styleLead?: string | null;
   searchQueries: string[];
+}
+
+/** Pistes quand l'œuvre précise n'est pas reconnue. */
+export interface IdentifyLeads {
+  artist: string | null;
+  artistBasis: 'signature' | 'cartel' | null;
+  artistRecords: SourceRecord[];
+  style: string | null;
 }
 
 export interface CandidateSignals {
@@ -118,6 +132,7 @@ export interface IdentifyResponse {
   cached: boolean;
   usage?: UsageInfo;
   warnings: string[];
+  leads?: IdentifyLeads;
 }
 
 export interface LabelFields {

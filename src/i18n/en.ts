@@ -15,7 +15,7 @@ export const en: Partial<Record<keyof typeof fr, string>> = {
   'scan.label': 'Label',
   'scan.import': 'Import',
   'entry.save': 'Add to my collection',
-  'entry.saved': 'In my collection',
+  'entry.saved': 'Remove from my collection',
   'entry.ask': 'Ask a question',
   'common.back': 'Back'
 };

@@ -5,7 +5,8 @@ import type { IdentifyResponse, LabelFields } from '../../shared/types';
 
 export interface ScanState {
   mode: 'artwork' | 'label';
-  photo?: Blob; // version envoyée (1568 px)
+  photo?: Blob; // version gardée (1568 px)
+  analysisPhoto?: Blob; // version envoyée pour l'analyse (3200 px)
   thumb?: Blob; // version conservée (640 px)
   photoHash?: string;
   labelPhoto?: Blob; // photo du cartel

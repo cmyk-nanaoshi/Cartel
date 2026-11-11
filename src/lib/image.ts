@@ -40,7 +40,10 @@ export async function preparePhoto(file: Blob) {
   if (file.size > 40 * 1024 * 1024) throw new Error('Fichier trop lourd (40 Mo maximum).');
   const upload = await resizeToJpeg(file, 1568, 0.85);
   const thumb = await resizeToJpeg(file, 640, 0.8);
-  return { upload, thumb };
+  // Version plus grande, envoyée seulement pour l'analyse : le serveur y relit le cartel en pleine
+  // résolution quand il est trop petit sur la photo réduite. Elle n'est pas gardée sur le téléphone.
+  const analysis = await resizeToJpeg(file, 3200, 0.82);
+  return { upload, thumb, analysis };
 }
 
 export async function sha256Hex(blob: Blob) {

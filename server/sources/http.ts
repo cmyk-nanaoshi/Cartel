@@ -23,6 +23,8 @@ export async function getJson<T = any>(source: string, url: string, opts: HttpOp
       headers: { Accept: 'application/json', 'User-Agent': opts.userAgent, ...(opts.headers ?? {}) }
     });
     if (!res.ok) throw new SourceError(source, `HTTP ${res.status}`);
+    const type = res.headers.get('content-type') ?? '';
+    if (type.includes('html')) throw new SourceError(source, `page HTML au lieu de données depuis ${new URL(res.url || url).host}`);
     return (await res.json()) as T;
   } catch (e: any) {
     if (e instanceof SourceError) throw e;

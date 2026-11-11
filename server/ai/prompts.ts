@@ -11,6 +11,9 @@ Règles :
 - Adapte l'observation à la nature de l'objet : sculpture (matériau, patine, socle), photographie (tirage, procédé), installation, design (fabricant, matériaux, assemblage), art urbain (support, lieu), architecture.
 - Transcris exactement le texte visible (cartel, signature, inscription), sans corriger ni compléter. Relis chaque mot : les confusions de lettres (« au » et « ou », « I » et « l », « rn » et « m ») changent le sens.
 - Si un cartel de musée est lisible sur la photo, remplis "label" champ par champ, tel qu'il est écrit, dans sa langue. Le cartel est la source la plus fiable pour cet exemplaire précis : un titre ou un artiste lisible sur le cartel prime sur ta reconnaissance visuelle. S'il n'y a pas de cartel lisible, "label" vaut null.
+- Si un cartel est visible mais trop petit pour être lu, donne quand même sa position dans "labelBox" : il sera relu en pleine résolution.
+- Si une signature ou le cartel donne un nom d'artiste, recopie-le dans "signedArtist", même si tu ne connais pas l'œuvre. Beaucoup d'œuvres vues en galerie ou en vente sont d'artistes peu documentés : le nom lu est alors l'information la plus utile.
+- Quand tu ne reconnais pas l'œuvre précise, tu peux donner dans "styleLead" une piste prudente (mouvement, école, période, artiste au style proche). Elle sera affichée comme une piste, jamais comme une identification.
 - Les requêtes de recherche doivent être courtes : titre original, titre anglais, nom de l'artiste. Elles servent à interroger des bases comme Joconde, Wikidata, le Met ou l'Art Institute of Chicago.
 - Si l'image est inexploitable (floue, trop sombre, reflet couvrant l'œuvre), remplis "imageQualityIssue" avec un conseil concret pour reprendre la photo.
 - Ne cherche jamais à identifier une personne réelle photographiée (visiteur, passant). Seules les œuvres comptent.

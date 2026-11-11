@@ -56,7 +56,7 @@ export function loadConfig() {
     limits: {
       perMinute: num('RATE_LIMIT_PER_MINUTE', 12),
       dailyBudgetUsd: num('DAILY_BUDGET_USD', 2),
-      maxImageBytes: num('MAX_IMAGE_BYTES', 4 * 1024 * 1024)
+      maxImageBytes: num('MAX_IMAGE_BYTES', 10 * 1024 * 1024)
     },
     accessCode: str('APP_ACCESS_CODE'),
     adminCode: str('ADMIN_CODE'),

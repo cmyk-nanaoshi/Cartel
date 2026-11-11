@@ -57,13 +57,13 @@ export function Scan() {
     setBusy(true);
     setError(null);
     try {
-      const { upload, thumb } = await preparePhoto(blob);
+      const { upload, thumb, analysis } = await preparePhoto(blob);
       stream?.getTracks().forEach((tr) => tr.stop());
       const prev = session.get();
       session.reset(mode);
       // Un cartel photographié juste après l'œuvre peut lui être associé : on garde l'analyse précédente.
       if (mode === 'label' && prev.response) session.set({ response: prev.response, thumb: prev.thumb, photo: prev.photo });
-      session.set(mode === 'label' ? { mode, labelPhoto: upload } : { mode, photo: upload, thumb });
+      session.set(mode === 'label' ? { mode, labelPhoto: upload } : { mode, photo: upload, analysisPhoto: analysis, thumb });
       const wantsGeo = await getSetting<boolean>('saveLocation');
       if (wantsGeo && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(

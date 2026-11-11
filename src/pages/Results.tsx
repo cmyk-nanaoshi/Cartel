@@ -135,6 +135,36 @@ export function Results() {
           </section>
         )}
 
+        {r.leads && (
+          <section className="stack-16" aria-label="Pistes">
+            <h2 className="t-head">Pistes</h2>
+            {r.leads.artist && (
+              <div className="stack-8">
+                <p className="t-small t-muted">{r.leads.artistBasis === 'cartel' ? 'Nom lu sur le cartel' : 'Nom lu dans la signature'}</p>
+                <p className="artist" style={{ fontSize: 'var(--t-l)', lineHeight: 'var(--lh-l)' }}>{frTypo(r.leads.artist)}</p>
+                {r.leads.artistRecords.length > 0 ? (
+                  <p className="t-small state-ok">
+                    {frTypo(`${r.leads.artistRecords.length} œuvre${r.leads.artistRecords.length > 1 ? 's' : ''} de cet artiste dans les catalogues, mais pas celle-ci`)}
+                  </p>
+                ) : (
+                  <p className="t-small t-muted">Cet artiste n’apparaît pas dans les catalogues de musées interrogés. C’est fréquent pour les artistes vus en galerie ou en vente.</p>
+                )}
+                <div className="row">
+                  <Link className="btn btn-ghost btn-small" to={`/recherche?artist=${encodeURIComponent(r.leads.artist)}`}>
+                    Voir cet artiste dans les catalogues
+                  </Link>
+                </div>
+              </div>
+            )}
+            {r.leads.style && (
+              <div className="stack-8">
+                <p className="t-small t-muted">Piste de style, ce n’est pas une identification</p>
+                <p className="reading measure">{frTypo(r.leads.style)}</p>
+              </div>
+            )}
+          </section>
+        )}
+
         <section className="stack-16">
           <h2 className="t-head">Ce que l’IA voit sur la photo</h2>
           <p className="reading measure">{frTypo(r.vision.description)}</p>

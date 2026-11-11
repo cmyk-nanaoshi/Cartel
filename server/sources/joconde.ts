@@ -43,7 +43,16 @@ export function jocondeWhere(title?: string, artist?: string, text?: string) {
   return parts.join(' AND ');
 }
 
+// Le jeu de données a déjà changé de domaine : on essaie l'adresse configurée puis les autres connues,
+// et on garde la première qui répond en JSON.
+export const JOCONDE_BASES = [
+  'https://data.culture.gouv.fr/api/explore/v2.1/catalog/datasets/base-joconde-extrait/records',
+  'https://data.culturecommunication.gouv.fr/api/explore/v2.1/catalog/datasets/base-joconde-extrait/records'
+];
+
 export function makeJocondeAdapter(base: string): SourceAdapter {
+  const bases = [base, ...JOCONDE_BASES.filter((b) => b !== base)];
+  let working: string | null = null;
   return {
     id: 'joconde',
     label: 'Base Joconde / POP',
@@ -52,8 +61,19 @@ export function makeJocondeAdapter(base: string): SourceAdapter {
     async search(q, http) {
       const where = jocondeWhere(q.title, q.artist, q.text);
       if (!where) return [];
-      const url = `${base}?limit=6&where=${encodeURIComponent(where)}`;
-      const res = await getJson('joconde', url, http);
+      const qs = `?limit=6&where=${encodeURIComponent(where)}`;
+      let res: any = null;
+      let lastErr: unknown = null;
+      for (const b of working ? [working] : bases) {
+        try {
+          res = await getJson('joconde', b + qs, http);
+          working = b;
+          break;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (!res) throw lastErr;
       const recs = (res?.results ?? []).map(jocondeToRecord).filter(Boolean) as SourceRecord[];
       const filtered = q.artist ? recs.filter((r) => artistMatch(q.artist, r.artist) > 0) : recs;
       return filtered.slice(0, q.limit ?? 3);

@@ -7,6 +7,7 @@ import type {
   Comparable,
   EntryRequest,
   EntrySection,
+  IdentifyLeads,
   IdentifyResponse,
   LabelFields,
   LabelResponse,
@@ -92,7 +93,7 @@ export class Services {
 
   async identify(buf: Buffer, mime: string): Promise<IdentifyResponse> {
     const { jpeg, hash } = await this.prepareImage(buf, mime);
-    const cacheKey = `identify:v2:${this.ai.name}:${hash}`;
+    const cacheKey = `identify:v3:${this.ai.name}:${hash}`;
     const hit = await this.cache.get<IdentifyResponse>(cacheKey);
     if (hit) return { ...hit, cached: true, usage: undefined };
     this.ensureBudget();
@@ -111,6 +112,20 @@ export class Services {
     this.spend(usage);
     const vision = sanitizeVision(data);
     const warnings: string[] = [];
+
+    // Cartel repéré mais illisible à 1568 px : on le relit dans la photo d'origine, en pleine résolution.
+    if (vision.labelBox && labelIncomplete(vision.label)) {
+      try {
+        const zoom = await this.readLabelZone(buf, vision.labelBox);
+        if (zoom) {
+          vision.label = mergeLabel(vision.label, zoom.fields);
+          this.spend(zoom.usage);
+        }
+      } catch {
+        /* la relecture est un bonus : on continue sans */
+      }
+    }
+    if (!vision.signedArtist && vision.label?.artist) vision.signedArtist = vision.label.artist;
     if (this.ai.demo) warnings.push('Mode démonstration : aucune IA n’a analysé la photo.');
 
     if (!vision.isArtwork) {
@@ -181,7 +196,63 @@ export class Services {
     const status = decideStatus(candidates);
     if (candidates.length && !candidates.some((c) => c.verified || c.labelConfirmed))
       warnings.push('Aucune notice concordante trouvée dans les bases interrogées : l’identification n’est pas vérifiée.');
-    return this.finish(cacheKey, { analysisId: hash, status, vision, candidates, warnings, usage });
+    const leads = await this.leadsFor(vision, candidates);
+    return this.finish(cacheKey, { analysisId: hash, status, vision, candidates, warnings, usage, leads });
+  }
+
+  /** Pistes quand aucune œuvre précise n'est confirmée : nom lu (signature, cartel) et style. */
+  private async leadsFor(vision: VisionAnalysis, candidates: Candidate[]): Promise<IdentifyLeads | undefined> {
+    if (candidates.some((c) => c.verified || c.labelConfirmed)) return undefined;
+    const artist = vision.signedArtist ?? null;
+    if (!artist && !vision.styleLead) return undefined;
+    let artistRecords: SourceRecord[] = [];
+    if (artist) {
+      try {
+        const r = await this.sources.searchAll({ artist, limit: 4 });
+        artistRecords = r.records.filter((x) => artistMatch(artist, x.artist) > 0).slice(0, 4);
+      } catch {
+        artistRecords = [];
+      }
+    }
+    return {
+      artist,
+      artistBasis: artist ? (vision.label?.artist && artistMatch(artist, vision.label.artist) > 0 ? 'cartel' : 'signature') : null,
+      artistRecords,
+      style: vision.styleLead ?? null
+    };
+  }
+
+  /** Relit le cartel dans la zone indiquée, sur l'image d'origine (avec une marge). */
+  private async readLabelZone(buf: Buffer, box: NonNullable<VisionAnalysis['labelBox']>) {
+    const upright = await sharp(buf).rotate().toBuffer();
+    const meta = await sharp(upright).metadata();
+    const W = meta.width ?? 0;
+    const H = meta.height ?? 0;
+    if (!W || !H) return null;
+    const mx = box.width * 0.35 + 0.01;
+    const my = box.height * 0.35 + 0.01;
+    const left = Math.max(0, Math.floor((box.left - mx) * W));
+    const top = Math.max(0, Math.floor((box.top - my) * H));
+    const right = Math.min(W, Math.ceil((box.left + box.width + mx) * W));
+    const bottom = Math.min(H, Math.ceil((box.top + box.height + my) * H));
+    if (right - left < 40 || bottom - top < 40) return null;
+    const crop = await sharp(upright)
+      .extract({ left, top, width: right - left, height: bottom - top })
+      .resize(1568, 1568, { fit: 'inside', withoutEnlargement: false })
+      .jpeg({ quality: 90 })
+      .toBuffer();
+    const { data, usage } = await this.ai.json<LabelFields>({
+      task: 'label',
+      system: LABEL_SYSTEM,
+      content: [
+        { type: 'image', mediaType: 'image/jpeg', base64: crop.toString('base64') },
+        { type: 'text', text: 'Lis ce cartel.' }
+      ],
+      schema: labelSchema,
+      maxTokens: 3000,
+      effort: 'low'
+    });
+    return { fields: sanitizeLabel(data), usage };
   }
 
   private async finish(key: string, r: Omit<IdentifyResponse, 'provider' | 'demo' | 'cached'>): Promise<IdentifyResponse> {
@@ -420,8 +491,37 @@ export function sanitizeVision(v: any): VisionAnalysis {
     visibleText: arr(v?.visibleText),
     inscriptions: arr(v?.inscriptions),
     hypotheses: hyps,
+    labelBox: sanitizeBox(v?.labelBox),
+    signedArtist: typeof v?.signedArtist === 'string' && v.signedArtist.trim() ? v.signedArtist.trim() : null,
+    styleLead: typeof v?.styleLead === 'string' && v.styleLead.trim() ? v.styleLead.trim() : null,
     searchQueries: arr(v?.searchQueries).slice(0, 6)
   };
+}
+
+export function sanitizeBox(b: any): VisionAnalysis['labelBox'] {
+  if (!b || typeof b !== 'object') return null;
+  const n = (x: any) => (typeof x === 'number' && isFinite(x) ? x : NaN);
+  let [l, t, w, h] = [n(b.left), n(b.top), n(b.width), n(b.height)];
+  if ([l, t, w, h].some(isNaN) || w <= 0 || h <= 0) return null;
+  // Certains modèles répondent en pourcentage.
+  if (l > 1 || t > 1 || w > 1 || h > 1) [l, t, w, h] = [l / 100, t / 100, w / 100, h / 100];
+  if (l < 0 || t < 0 || l >= 1 || t >= 1) return null;
+  return { left: l, top: t, width: Math.min(w, 1 - l), height: Math.min(h, 1 - t) };
+}
+
+/** Le cartel est-il incomplet (titre ou artiste manquant) ? */
+function labelIncomplete(l: LabelFields | null) {
+  return !l || !l.title || !l.artist;
+}
+
+/** Complète les champs vides d'un cartel par ceux d'une seconde lecture. */
+export function mergeLabel(a: LabelFields | null, b: LabelFields | null): LabelFields | null {
+  if (!a) return b;
+  if (!b) return a;
+  const out: any = { ...a };
+  for (const k of LABEL_KEYS) if (!out[k] && (b as any)[k]) out[k] = (b as any)[k];
+  if ((b.rawText ?? '').length > (a.rawText ?? '').length) out.rawText = b.rawText;
+  return out;
 }
 
 /**
