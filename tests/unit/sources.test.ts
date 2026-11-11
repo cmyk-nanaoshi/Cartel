@@ -49,7 +49,7 @@ describe('Met', () => {
   });
   it('recherche puis filtre par artiste', async () => {
     const calls = mockFetch([
-      [/search\?hasImages=true&q=Wheat/, { total: 2, objectIDs: [436535, 1] }],
+      [/v1\.1\/search\?hasImages=true&limit=6&q=Wheat/, { total: 2, objectIDs: [436535, 1] }],
       [/objects\/436535/, obj],
       [/objects\/1$/, { ...obj, objectID: 1, artistDisplayName: 'Someone Else' }]
     ]);

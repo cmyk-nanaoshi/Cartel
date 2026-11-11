@@ -6,6 +6,8 @@ import { artistMatch } from '../lib/text.js';
 // Metropolitan Museum of Art Collection API — sans clé.
 // Doc : https://metmuseum.github.io/  Données Open Access sous CC0 (champ isPublicDomain).
 const BASE = 'https://collectionapi.metmuseum.org/public/collection/v1';
+// La recherche /v1/search a été retirée le 1er octobre 2026 au profit de /v1.1/search (paginée).
+const BASE_SEARCH = 'https://collectionapi.metmuseum.org/public/collection/v1.1';
 
 export function metObjectToRecord(o: any): SourceRecord | null {
   if (!o || !o.objectID) return null;
@@ -40,7 +42,7 @@ export const metAdapter: SourceAdapter = {
   async search(q, http) {
     const terms = [q.title, q.text].filter(Boolean).join(' ').trim() || q.artist;
     if (!terms) return [];
-    const s = await getJson('met', `${BASE}/search?hasImages=true&q=${encodeURIComponent(terms)}`, http);
+    const s = await getJson('met', `${BASE_SEARCH}/search?hasImages=true&limit=6&q=${encodeURIComponent(terms)}`, http);
     const ids: number[] = (s?.objectIDs ?? []).slice(0, 6);
     const objs = await Promise.allSettled(ids.map((id) => getJson('met', `${BASE}/objects/${id}`, http)));
     const recs = objs
