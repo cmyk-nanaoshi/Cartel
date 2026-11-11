@@ -43,38 +43,50 @@ export function jocondeWhere(title?: string, artist?: string, text?: string) {
   return parts.join(' AND ');
 }
 
-// Le jeu de données a déjà changé de domaine : on essaie l'adresse configurée puis les autres connues,
-// et on garde la première qui répond en JSON.
-export const JOCONDE_BASES = [
-  'https://data.culture.gouv.fr/api/explore/v2.1/catalog/datasets/base-joconde-extrait/records',
-  'https://data.culturecommunication.gouv.fr/api/explore/v2.1/catalog/datasets/base-joconde-extrait/records'
-];
+// L'ancienne API Opendatasoft du ministère a fermé (data.culture.gouv.fr redirige vers
+// culture.data.gouv.fr). On interroge désormais l'API tabulaire de data.gouv.fr sur le CSV de la base,
+// mis à jour chaque semaine. Les colonnes y sont en casse mixte (Auteur, Titre…) : on les passe en
+// minuscules pour réutiliser jocondeToRecord. Attention, Date_creation y est la date de la notice,
+// pas celle de l'œuvre.
+export const JOCONDE_TABULAR = 'https://tabular-api.data.gouv.fr/api/resources/7e3307c2-f2ff-455c-bbca-bb6f11aec7bb/data/';
 
-export function makeJocondeAdapter(base: string): SourceAdapter {
-  const bases = [base, ...JOCONDE_BASES.filter((b) => b !== base)];
-  let working: string | null = null;
+/** Mot le plus distinctif d'un titre, pour un filtre « contient » robuste aux articles et à la casse. */
+export function titleKeyword(title?: string) {
+  if (!title) return '';
+  const stop = new Set(['les', 'des', 'une', 'the', 'and', 'dans', 'avec', 'pour', 'sur', 'aux', 'du', 'de', 'la', 'le', 'un', 'et', 'of', 'en']);
+  const words = title
+    .replace(/[«»"“”’'(),.;:!?]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stop.has(w.toLowerCase()));
+  return words.sort((a, b) => b.length - a.length)[0] ?? '';
+}
+
+export function tabularRow(r: any) {
+  const out: any = {};
+  for (const [k, v] of Object.entries(r ?? {})) out[k.toLowerCase()] = v;
+  delete out.date_creation;
+  return out;
+}
+
+export function makeJocondeAdapter(_base?: string): SourceAdapter {
   return {
     id: 'joconde',
     label: 'Base Joconde / POP',
-    note: 'Licence Ouverte 2.0. Extrait open data sans images ; lien vers la notice POP.',
+    note: 'Licence Ouverte 2.0, via l’API tabulaire de data.gouv.fr. Sans images ; lien vers la notice POP.',
     enabled: true,
     async search(q, http) {
-      const where = jocondeWhere(q.title, q.artist, q.text);
-      if (!where) return [];
-      const qs = `?limit=6&where=${encodeURIComponent(where)}`;
-      let res: any = null;
-      let lastErr: unknown = null;
-      for (const b of working ? [working] : bases) {
-        try {
-          res = await getJson('joconde', b + qs, http);
-          working = b;
-          break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (!res) throw lastErr;
-      const recs = (res?.results ?? []).map(jocondeToRecord).filter(Boolean) as SourceRecord[];
+      const sn = surname(q.artist).toUpperCase();
+      const kw = titleKeyword(q.title ?? q.text);
+      if (!sn && !kw) return [];
+      const run = async (params: Record<string, string>) => {
+        const qs = new URLSearchParams({ ...params, page_size: '20' }).toString();
+        const res = await getJson('joconde', `${JOCONDE_TABULAR}?${qs}`, http);
+        return ((res?.data ?? []).map((r: any) => jocondeToRecord(tabularRow(r))).filter(Boolean) as SourceRecord[]);
+      };
+      let recs: SourceRecord[] = [];
+      if (sn && kw) recs = await run({ Auteur__contains: sn, Titre__contains: kw });
+      if (!recs.length && sn) recs = await run({ Auteur__contains: sn });
+      if (!recs.length && !sn && kw) recs = await run({ Titre__contains: kw });
       const filtered = q.artist ? recs.filter((r) => artistMatch(q.artist, r.artist) > 0) : recs;
       return filtered.slice(0, q.limit ?? 3);
     }

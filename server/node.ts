@@ -34,23 +34,6 @@ setTimeout(async () => {
       console.log(`[sources] ${a.id} : ÉCHEC ${e?.message ?? e}`);
     }
   }
-  // Diagnostic Joconde : l'API tabulaire de data.gouv.fr sur le CSV de la base.
-  try {
-    const u = 'https://tabular-api.data.gouv.fr/api/resources/7e3307c2-f2ff-455c-bbca-bb6f11aec7bb/data/?page_size=1';
-    const r = await fetch(u, { headers: { Accept: 'application/json', 'User-Agent': svc.sources.http.userAgent } });
-    const txt = await r.text();
-    console.log(`[sources] joconde-tabulaire : HTTP ${r.status} ${txt.slice(0, 1500)}`);
-  } catch (e: any) {
-    console.log(`[sources] joconde-tabulaire : ÉCHEC ${e?.message ?? e} ${e?.cause?.code ?? ''}`);
-  }
-  for (const u of ['https://data.culture.gouv.fr/', 'https://data.culturecommunication.gouv.fr/']) {
-    try {
-      const r = await fetch(u, { redirect: 'manual' });
-      console.log(`[sources] ${u} : HTTP ${r.status} ${r.headers.get('location') ?? ''}`);
-    } catch (e: any) {
-      console.log(`[sources] ${u} : ÉCHEC ${e?.cause?.code ?? e?.message}`);
-    }
-  }
 }, 3000);
 
 serve({ fetch: app.fetch, port: cfg.port }, (info) => {

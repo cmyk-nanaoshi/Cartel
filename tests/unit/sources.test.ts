@@ -144,7 +144,15 @@ describe('Joconde (POP)', () => {
   });
   it('signale une erreur HTTP sans planter les autres sources', async () => {
     mockFetch([]);
-    await expect(makeJocondeAdapter('https://example.org/records').search({ title: 'x' }, http)).rejects.toThrow(/joconde: HTTP 404/);
+    await expect(makeJocondeAdapter().search({ title: 'Le Radeau de la Méduse' }, http)).rejects.toThrow(/joconde: HTTP 404/);
+  });
+  it('interroge l’API tabulaire par nom en capitales et mot du titre', async () => {
+    const calls = mockFetch([
+      [/tabular-api\.data\.gouv\.fr.*Auteur__contains=GERICAULT&Titre__contains=Radeau/, { data: [{ Reference: '000PE001', Auteur: 'GERICAULT Théodore', Titre: 'Le Radeau de la Méduse', Date_creation: '1999-10-07', Nom_officiel_musee: 'musée du Louvre' }] }]
+    ]);
+    const recs = await makeJocondeAdapter().search({ title: 'Le Radeau de la Méduse', artist: 'Théodore Géricault' }, http);
+    expect(calls[0]).toContain('tabular-api.data.gouv.fr');
+    expect(recs[0]).toMatchObject({ id: 'joconde:000PE001', title: 'Le Radeau de la Méduse', date: undefined });
   });
 });
 
