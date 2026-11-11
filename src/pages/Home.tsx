@@ -29,7 +29,7 @@ export function Home() {
   return (
     <main className="page">
       <header className="hero stack-8">
-        <img className="wordmark" src="/brand/logo-horizontal-menthe.svg" alt="Cartel" width="126" height="24" />
+        <img className="wordmark" src="/brand/logo-horizontal-vert.svg" alt="Cartel" width="126" height="24" />
         <h1 className="t-display measure">Ce que vous regardez, et d’où cela vient.</h1>
       </header>
 

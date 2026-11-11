@@ -54,7 +54,7 @@ export function Results() {
       <div className="wall">
         <div className="page" style={{ paddingBottom: 24 }}>
           <div className="grid" style={{ alignItems: 'end' }}>
-            <div className="span-half md-span-3 lg-span-3">{photoUrl && <img src={photoUrl} alt="Votre photo" style={{ width: '100%', maxHeight: 280, objectFit: 'contain', objectPosition: 'left bottom' }} />}</div>
+            <div className="span-half md-span-3 lg-span-3">{photoUrl && <img src={photoUrl} alt="Votre photo" style={{ display: 'block', width: 'auto', maxWidth: '100%', maxHeight: 280, borderRadius: 'var(--radius-img)' }} />}</div>
             <div className="span-half md-span-5 lg-span-8 stack-8">
               <p className="t-small" style={{ color: 'var(--wall-ink-2)' }}>
                 {OBJECT_KIND_LABEL[r.vision.objectKind]}
@@ -103,9 +103,9 @@ export function Results() {
                     </div>
                   </div>
                   <Meter c={c} />
-                  {c.labelConfirmed && <p className="t-small" style={{ color: 'var(--ok)' }}>Confirmé par le cartel lu sur la photo</p>}
+                  {c.labelConfirmed && <p className="t-small state-ok">Confirmé par le cartel lu sur la photo</p>}
                   {(c.records.length > 0 || !c.labelConfirmed) && (
-                    <p className="t-small" style={{ color: c.records.length ? 'var(--ok)' : 'var(--warn)' }}>
+                    <p className={`t-small ${c.records.length ? 'state-ok' : 'state-warn'}`}>
                       {frTypo(c.records.length ? `Notice trouvée : ${sourceNames(c)}` : 'Aucune notice concordante dans les catalogues interrogés')}
                     </p>
                   )}
