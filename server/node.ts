@@ -34,6 +34,18 @@ setTimeout(async () => {
       console.log(`[sources] ${a.id} : ÉCHEC ${e?.message ?? e}`);
     }
   }
+  // Diagnostic Joconde : temps de réponse de l'API tabulaire selon le filtre.
+  const T = 'https://tabular-api.data.gouv.fr/api/resources/7e3307c2-f2ff-455c-bbca-bb6f11aec7bb/data/?page_size=5&';
+  for (const q of ['Auteur__exact=MONET%20Claude', 'Reference__exact=000PE001234', 'Auteur__contains=MONET', 'Titre__contains=Nymph%C3%A9as']) {
+    const t = Date.now();
+    try {
+      const r = await fetch(T + q, { signal: AbortSignal.timeout(30000) });
+      const j: any = await r.json().catch(() => null);
+      console.log(`[sources] tabulaire ${q} : HTTP ${r.status} ${Date.now() - t} ms, ${j?.data?.length ?? '?'} ligne(s) ${JSON.stringify(j?.data?.[0] ? { a: j.data[0].Auteur, t: j.data[0].Titre } : j).slice(0, 300)}`);
+    } catch (e: any) {
+      console.log(`[sources] tabulaire ${q} : ÉCHEC après ${Date.now() - t} ms ${e?.message}`);
+    }
+  }
 }, 3000);
 
 serve({ fetch: app.fetch, port: cfg.port }, (info) => {
