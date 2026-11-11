@@ -80,13 +80,15 @@ export function makeJocondeAdapter(_base?: string): SourceAdapter {
       if (!sn && !kw) return [];
       const run = async (params: Record<string, string>) => {
         const qs = new URLSearchParams({ ...params, page_size: '20' }).toString();
-        const res = await getJson('joconde', `${JOCONDE_TABULAR}?${qs}`, http);
+        // L'API tabulaire répond en 6 à 11 s sur cette base de 1,2 Go : délai propre, plus long.
+        const res = await getJson('joconde', `${JOCONDE_TABULAR}?${qs}`, { ...http, timeoutMs: Math.max(http.timeoutMs, 14000) });
         return ((res?.data ?? []).map((r: any) => jocondeToRecord(tabularRow(r))).filter(Boolean) as SourceRecord[]);
       };
-      let recs: SourceRecord[] = [];
-      if (sn && kw) recs = await run({ Auteur__contains: sn, Titre__contains: kw });
-      if (!recs.length && sn) recs = await run({ Auteur__contains: sn });
-      if (!recs.length && !sn && kw) recs = await run({ Titre__contains: kw });
+      // Une seule requête, la plus précise possible, vu la lenteur de l'API.
+      const params: Record<string, string> = {};
+      if (sn) params.Auteur__contains = sn;
+      if (kw) params.Titre__contains = kw;
+      const recs = await run(params);
       const filtered = q.artist ? recs.filter((r) => artistMatch(q.artist, r.artist) > 0) : recs;
       return filtered.slice(0, q.limit ?? 3);
     }
