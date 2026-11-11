@@ -121,7 +121,7 @@ export function Admin() {
             {open.validatedAt ? ` · validée le ${isoDay(open.validatedAt)}` : ''}
           </p>
         </div>
-        {open.entry.imageUrl && <img src={museumImg(open.entry.imageUrl)} alt="" style={{ maxHeight: 280, width: 'auto', maxWidth: '100%' }} />}
+        {open.entry.imageUrl && <img src={museumImg(open.entry.imageUrl)} alt="" style={{ maxHeight: 280, width: 'auto', maxWidth: '100%', display: 'block', borderRadius: 'var(--radius-img)' }} />}
         <Cartel entry={{ ...open.entry, artistBio: open.entry.artistLine ?? undefined }} />
 
         {open.reports.length > 0 && (

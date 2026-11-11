@@ -82,7 +82,7 @@ export function LabelReview() {
       </header>
       <div className="grid">
         <div className="span-all md-span-3 lg-span-4 stack-16">
-          {url && <img src={url} alt="Photo du cartel" style={{ width: '100%', border: '1px solid var(--rule)' }} />}
+          {url && <img src={url} alt="Photo du cartel" style={{ width: '100%', display: 'block', border: '1px solid var(--rule)', borderRadius: 'var(--radius-img)' }} />}
           <p className="t-small t-muted">
             {s.labelSource === 'ocr-local'
               ? 'Texte lu sur votre téléphone par OCR, sans IA. Les champs sont devinés : corrigez-les avant de continuer.'
