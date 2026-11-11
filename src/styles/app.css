@@ -36,8 +36,10 @@
   --brass: var(--green);          /* renvois aux sources */
   --dot: var(--carmine);          /* pastille de collection, uniquement sur blanc */
   /* États (8.11.2026) : le jaune et le menthe sont remplacés par le carmin, posé uniquement sur du blanc. */
-  --ok: var(--carmine);
+  --ok: var(--green);
   --warn: var(--carmine);
+  --icon-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  --icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7.5v5.5M12 16.5v.01'/%3E%3C/svg%3E");
   --focus: var(--green);
 
   --sans: 'Schibsted Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
@@ -245,6 +247,7 @@ h1, h2, h3, p { margin: 0; }
 .kind-interpretation { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink-2); }
 .kind-hypothese { border: 1px dashed var(--ink-3); color: var(--ink-2); }
 .kind-unsourced { border-color: color-mix(in srgb, var(--warn) 70%, transparent); color: var(--warn); }
+.kind-unsourced::before { content: ''; display: inline-block; width: 11px; height: 11px; margin-right: 3px; vertical-align: -1px; background: currentColor; -webkit-mask: var(--icon-alert) center / contain no-repeat; mask: var(--icon-alert) center / contain no-repeat; }
 /* Appels de note : line-height nul pour ne pas écarter la ligne qui les porte (ligne de base de 4 px). */
 sup { line-height: 0; }
 .refs { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--brass); margin-left: 1px; white-space: nowrap; }
@@ -378,3 +381,14 @@ fieldset > legend { margin-bottom: 8px; }
 .status-pill { display: inline-block; font-family: var(--mono); font-size: 11px; line-height: 16px; padding: 0 6px; border: 1px solid var(--ink-3); border-radius: 8px; color: var(--ink-2); }
 .status-pill[data-s='validee'] { border-color: var(--ok); color: var(--ok); }
 .status-pill[data-s='rejetee'] { border-color: var(--warn); color: var(--warn); }
+.status-pill[data-s='validee']::before, .status-pill[data-s='rejetee']::before { content: ''; display: inline-block; width: 11px; height: 11px; margin-right: 3px; vertical-align: -1px; background: currentColor; -webkit-mask: var(--icon-ok) center / contain no-repeat; mask: var(--icon-ok) center / contain no-repeat; }
+.status-pill[data-s='rejetee']::before { -webkit-mask-image: var(--icon-alert); mask-image: var(--icon-alert); }
+
+/* États : confirmé en vert avec une coche, alerte en carmin avec un rond d'alerte. La couleur n'est jamais le seul signal. */
+.state-ok, .state-warn { display: flex; gap: 6px; align-items: flex-start; font-weight: 600; }
+.state-ok { color: var(--ok); }
+.state-warn { color: var(--warn); }
+.state-ok::before, .state-warn::before { content: ''; flex: none; width: 16px; height: 16px; margin-top: 2px; background: currentColor; -webkit-mask: var(--icon-ok) center / contain no-repeat; mask: var(--icon-ok) center / contain no-repeat; }
+.state-warn::before { -webkit-mask-image: var(--icon-alert); mask-image: var(--icon-alert); }
+.state-inline { display: inline-flex; align-items: center; }
+.state-inline::before { width: 13px; height: 13px; margin-top: 0; }

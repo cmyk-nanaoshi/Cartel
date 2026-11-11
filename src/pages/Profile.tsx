@@ -128,7 +128,7 @@ export function Profile() {
               <li key={s.id}>
                 <div className="row-between">
                   <span style={{ fontWeight: 600 }}>{s.label}</span>
-                  <span className="t-small" style={{ color: s.enabled ? 'var(--ok)' : 'var(--ink-3)' }}>
+                  <span className={`t-small ${s.enabled ? 'state-ok state-inline' : ''}`} style={s.enabled ? undefined : { color: 'var(--ink-3)' }}>
                     {s.enabled ? 'active' : 'inactive'}
                   </span>
                 </div>

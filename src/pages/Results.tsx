@@ -103,9 +103,9 @@ export function Results() {
                     </div>
                   </div>
                   <Meter c={c} />
-                  {c.labelConfirmed && <p className="t-small" style={{ color: 'var(--ok)' }}>Confirmé par le cartel lu sur la photo</p>}
+                  {c.labelConfirmed && <p className="t-small state-ok">Confirmé par le cartel lu sur la photo</p>}
                   {(c.records.length > 0 || !c.labelConfirmed) && (
-                    <p className="t-small" style={{ color: c.records.length ? 'var(--ok)' : 'var(--warn)' }}>
+                    <p className={`t-small ${c.records.length ? 'state-ok' : 'state-warn'}`}>
                       {frTypo(c.records.length ? `Notice trouvée : ${sourceNames(c)}` : 'Aucune notice concordante dans les catalogues interrogés')}
                     </p>
                   )}
