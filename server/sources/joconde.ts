@@ -72,8 +72,9 @@ export function makeJocondeAdapter(_base?: string): SourceAdapter {
   return {
     id: 'joconde',
     label: 'Base Joconde / POP',
-    note: 'Licence Ouverte 2.0, via l’API tabulaire de data.gouv.fr. Sans images ; lien vers la notice POP.',
-    enabled: true,
+    note: 'En pause : l’API tabulaire de data.gouv.fr met plus de 14 s à répondre sur cette base. À remplacer par un index local de la base.',
+    // Désactivée tant qu'elle ralentit chaque analyse sans répondre à temps (mesuré le 11 novembre 2026).
+    enabled: false,
     async search(q, http) {
       const sn = surname(q.artist).toUpperCase();
       const kw = titleKeyword(q.title ?? q.text);
