@@ -51,11 +51,14 @@
   --sans: 'Schibsted Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
   --serif: 'Spectral', Georgia, 'Times New Roman', serif;
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --radius-btn: 12px;
-  --radius-card: 8px;
-  --radius-img: 8px;   /* vignettes et photos d'œuvres */
-  --radius-thumb: 4px; /* petites vignettes de liste */
+  /* Échelle « Doux » validée le 22.11.2026 (variables Figma « Dimensions »). */
+  --radius-btn: 16px;
+  --radius-card: 16px;
+  --radius-img: 12px;  /* photos et reproductions */
+  --radius-thumb: 8px; /* vignettes de liste */
   --radius-tag: 8px;
+  --segment-pad: 4px;
+  --radius-segment: calc(var(--radius-btn) - var(--segment-pad)); /* concentrique avec le contrôle */
 
   --t-xs: 13px;   --lh-xs: 20px;
   --t-s: 15px;    --lh-s: 24px;
@@ -69,7 +72,7 @@
   --cols: 4;
   --max: 1180px;
   --tabbar: 64px;
-  --radius: 2px;
+  --radius: 8px; /* champs */
 
   color-scheme: light;
 }
@@ -478,8 +481,8 @@ body { background: var(--paper); color: var(--ink); }
 .corners.label { inset: 30% 16px; }
 .scan-hint { position: static; color: var(--ink-2); padding: 12px var(--margin) 0; }
 .scan-mode { display: flex; justify-content: center; padding: 12px var(--margin) 0; }
-.segmented { border: 1px solid var(--control); border-radius: var(--radius-btn); padding: 3px; background: var(--surface); }
-.segmented button { color: var(--on-surface); border-radius: 9px; min-height: 36px; padding: 6px 28px; font-size: var(--t-s); }
+.segmented { border: 1px solid var(--control); border-radius: var(--radius-btn); padding: calc(var(--segment-pad) - 1px); background: var(--surface); }
+.segmented button { color: var(--on-surface); border-radius: var(--radius-segment); min-height: 32px; padding: 6px 28px; font-size: var(--t-s); }
 .segmented button[aria-pressed='true'] { background: var(--green); color: var(--white); }
 .scan-bottom { padding: 16px var(--margin) calc(16px + env(safe-area-inset-bottom)); }
 .shutter { border-color: var(--ink); width: 76px; height: 76px; }
