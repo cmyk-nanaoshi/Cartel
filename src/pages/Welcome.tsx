@@ -23,7 +23,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
       </div>
       <ul className="checks">
         <li>Il lit le cartel posé à côté de l’œuvre.</li>
-        <li>Il cherche l’œuvre dans les catalogues des musées.</li>
+        <li>Il retrouve l’œuvre et son histoire.</li>
         <li>Il garde vos œuvres et les lieux où vous les avez vues.</li>
       </ul>
       <button className="btn btn-block" onClick={start}>

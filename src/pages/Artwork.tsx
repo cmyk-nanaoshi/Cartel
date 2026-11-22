@@ -159,8 +159,7 @@ export function Artwork() {
             </div>
           )}
           <p className="row t-muted">
-            <span className="spinner" /> Préparation de la fiche à partir de {state.candidate?.records.length ?? 0} notice
-            {(state.candidate?.records.length ?? 0) > 1 ? 's' : ''} de musée…
+            <span className="spinner" /> Préparation de la fiche…
           </p>
         </div>
       </main>
@@ -354,7 +353,7 @@ export function Artwork() {
                   ))}
                 </ol>
               ) : (
-                <p className="t-small t-muted">Aucune notice de musée n’a été trouvée. Le contenu de cette fiche n’est pas vérifié.</p>
+                <p className="t-small t-muted">Le contenu de cette fiche n’est vérifié par aucune source.</p>
               )}
               <p className="t-small t-muted" style={{ marginTop: 12 }}>{frTypo(sourcesNote)}</p>
               {entry.verification && (

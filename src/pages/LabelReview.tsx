@@ -124,7 +124,7 @@ export function LabelReview() {
 
           <div className="row">
             <button className="btn" type="submit" disabled={searching}>
-              {searching ? <span className="spinner" /> : null} Rechercher l’œuvre dans les catalogues
+              {searching ? <span className="spinner" /> : null} Retrouver l’œuvre
             </button>
             <button
               type="button"
@@ -138,7 +138,7 @@ export function LabelReview() {
 
           {results && (
             <section className="stack-8" aria-label="Notices trouvées">
-              <h2 className="t-head">{results.length ? 'Notices trouvées' : 'Aucune notice trouvée'}</h2>
+              <h2 className="t-head">{results.length ? 'Œuvres possibles' : 'Aucune œuvre retrouvée'}</h2>
               <ul className="list-plain">
                 {results.map((r) => (
                   <li key={r.id} className="row-between">

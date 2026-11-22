@@ -38,7 +38,7 @@ export function Analyzing() {
   async function runArtwork() {
     setSteps([
       { label: 'Photo préparée et compressée sur le téléphone', state: 'done' },
-      { label: 'Observation de l’image, puis vérification dans les catalogues de musées', state: 'active' }
+      { label: 'Recherche de l’œuvre', state: 'active' }
     ]);
     try {
       const hash = await sha256Hex(s.photo!);

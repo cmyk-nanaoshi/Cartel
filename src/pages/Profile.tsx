@@ -91,7 +91,7 @@ export function Profile() {
           </div>
           <p className="t-small t-muted">Automatique suit le réglage du téléphone.</p>
           {error && <Notice kind="error" title="Serveur injoignable">{error}</Notice>}
-          {config?.demo && <Notice title="Mode démonstration">Les résultats d’identification sont simulés et les fiches sont construites à partir des notices seules.</Notice>}
+          {config?.demo && <Notice title="Mode démonstration">Les résultats d’identification sont simulés.</Notice>}
           {(config?.accessCodeRequired || code) && (
             <div className="stack-8">
               <label className="field">

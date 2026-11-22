@@ -211,7 +211,7 @@ export function createApp(deps: AppDeps = {}) {
     try {
       return c.json({ records: await aicRandom(sources.http, 12) });
     } catch (e: any) {
-      return c.json({ records: [], error: 'Découverte indisponible : ' + (e?.message ?? e) }, 502);
+      return c.json({ records: [], error: 'Tirage indisponible pour le moment.' }, 502);
     }
   });
 

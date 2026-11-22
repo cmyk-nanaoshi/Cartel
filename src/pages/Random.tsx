@@ -35,7 +35,7 @@ export function Random() {
       <div className="page" style={{ paddingTop: 8 }}>
         <h1 className="t-display">{t('random.title')}</h1>
         <p className="t-small t-muted" style={{ marginTop: 4 }}>
-          Douze œuvres tirées au hasard dans le domaine public de l’Art Institute of Chicago.
+          Douze œuvres du domaine public, tirées au hasard.
         </p>
         <button className="btn btn-secondary" style={{ marginTop: 16, marginBottom: 24 }} onClick={load} disabled={loading}>
           {loading ? <span className="spinner" /> : null} Tirer d’autres œuvres

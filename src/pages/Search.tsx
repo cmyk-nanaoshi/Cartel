@@ -119,20 +119,18 @@ export function Search() {
             <Link className="btn btn-secondary btn-block" to="/hasard">
               Œuvres au hasard
             </Link>
-            <p className="t-small t-muted" style={{ marginTop: 8 }}>Douze œuvres tirées au hasard dans le domaine public de l’Art Institute of Chicago.</p>
+            <p className="t-small t-muted" style={{ marginTop: 8 }}>Douze œuvres du domaine public, tirées au hasard.</p>
           </div>
         ) : (
           <div className="stack-16" style={{ marginTop: 24 }}>
-            {loading && <p className="row t-muted"><span className="spinner" /> Recherche dans les catalogues…</p>}
-            {errors.map((e) => (
-              <Notice key={e}>{e}</Notice>
-            ))}
+            {loading && <p className="row t-muted"><span className="spinner" /> Recherche en cours…</p>}
+            {records && !records.length && errors.length > 0 && <Notice>La recherche n’a pas abouti. Réessayez dans un instant.</Notice>}
             {records && !loading && (records.length ? (
               <>
-                <h2 className="rubric">Dans les catalogues</h2>
+                <h2 className="rubric">Résultats</h2>
                 <RecordGrid records={records} />
               </>
-            ) : <p className="t-muted">Aucune notice trouvée. Essayez le titre original ou en anglais.</p>)}
+            ) : <p className="t-muted">Aucune œuvre trouvée. Essayez le titre original ou en anglais.</p>)}
           </div>
         )}
       </div>

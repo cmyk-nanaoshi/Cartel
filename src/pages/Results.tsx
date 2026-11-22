@@ -9,7 +9,7 @@ import { museumImg } from '../lib/api';
 import { frNumber, frTypo } from '../../shared/typo';
 
 const STATUS: Record<string, { title: string; text: string }> = {
-  identified: { title: 'Œuvre identifiée', text: 'L’hypothèse principale concorde avec au moins une notice de musée.' },
+  identified: { title: 'Œuvre identifiée', text: 'L’œuvre a été retrouvée et sa fiche est prête.' },
   ambiguous: { title: 'Plusieurs œuvres possibles', text: 'Les hypothèses sont proches. Comparez les indices ci-dessous avant de choisir.' },
   uncertain: { title: 'Identification incertaine', text: 'Aucune hypothèse n’est assez solide. Les pistes ci-dessous ne sont pas des identifications.' },
   not_artwork: { title: 'Pas d’œuvre reconnue sur la photo', text: 'L’image ne semble pas montrer une œuvre, un objet d’art ou un monument.' },
@@ -74,7 +74,7 @@ export function Results() {
 
         {r.candidates.length > 0 && (
           <section aria-label="Correspondances">
-            <h2 className="rubric">Dans les catalogues</h2>
+            <h2 className="rubric">Œuvres possibles</h2>
             {r.candidates.map((c) => (
               <article key={c.key} className="candidate">
                 <button className="candidate-open" onClick={() => open(c)} aria-label={`Ouvrir la fiche : ${c.title}`}>
@@ -88,11 +88,11 @@ export function Results() {
                   <span className="stack-4">
                     <span className="artist" style={{ display: 'block' }}>{c.artist}</span>
                     <span className="work-title" style={{ display: 'block', fontSize: 17, lineHeight: '24px' }}>{c.title}</span>
-                    <span className="mono t-muted" style={{ display: 'block' }}>{frTypo([sourceNames(c), c.date].filter(Boolean).join(' · ') || 'Aucune notice concordante')}</span>
+                    <span className="mono t-muted" style={{ display: 'block' }}>{frTypo([sourceNames(c), c.date].filter(Boolean).join(' · ') || '')}</span>
                   </span>
                 </button>
                 {c.labelConfirmed && <p className="t-small state-ok">Confirmé par le cartel lu sur la photo</p>}
-                {!c.labelConfirmed && !c.records.length && <p className="t-small state-warn">Aucune notice concordante dans les catalogues interrogés</p>}
+                {!c.labelConfirmed && !c.records.length && <p className="t-small state-warn">Identification non confirmée</p>}
                 <details className="t-small">
                   <summary style={{ cursor: 'pointer', color: 'var(--ink-2)' }}>Pourquoi cette proposition</summary>
                   <div className="stack-8" style={{ paddingTop: 8 }}>
@@ -101,7 +101,7 @@ export function Results() {
                       <dt>Estimation</dt>
                       <dd className="num">{Math.round(c.signals.model * 100)} %</dd>
                       <dt>Titre et artiste</dt>
-                      <dd className="num">{c.signals.text === null ? 'aucune notice' : `${Math.round(c.signals.text * 100)} % de concordance`}</dd>
+                      <dd className="num">{c.signals.text === null ? 'non mesurée' : `${Math.round(c.signals.text * 100)} % de concordance`}</dd>
                       <dt>Ressemblance d’image</dt>
                       <dd className="num">{c.signals.visual === null ? 'non mesurée (pas d’image de référence)' : `${Math.round(c.signals.visual * 100)} %`}</dd>
                     </dl>
@@ -128,14 +128,14 @@ export function Results() {
                 <p className="artist" style={{ fontSize: 'var(--t-l)', lineHeight: 'var(--lh-l)' }}>{frTypo(r.leads.artist)}</p>
                 {r.leads.artistRecords.length > 0 ? (
                   <p className="t-small state-ok">
-                    {frTypo(`${r.leads.artistRecords.length} œuvre${r.leads.artistRecords.length > 1 ? 's' : ''} de cet artiste dans les catalogues, mais pas celle-ci`)}
+                    {frTypo(`${r.leads.artistRecords.length} œuvre${r.leads.artistRecords.length > 1 ? 's' : ''} de cet artiste retrouvée${r.leads.artistRecords.length > 1 ? 's' : ''}, mais pas celle-ci`)}
                   </p>
                 ) : (
-                  <p className="t-small t-muted">Cet artiste n’apparaît pas dans les catalogues de musées interrogés. C’est fréquent pour les artistes vus en galerie ou en vente.</p>
+                  <p className="t-small t-muted">Aucune autre œuvre de cet artiste n’a été retrouvée. C’est fréquent pour les artistes vus en galerie ou en vente.</p>
                 )}
                 <div className="row">
                   <Link className="btn btn-secondary btn-small" to={`/recherche?artist=${encodeURIComponent(r.leads.artist)}`}>
-                    Voir cet artiste dans les catalogues
+                    Voir les œuvres de cet artiste
                   </Link>
                 </div>
               </div>
