@@ -218,7 +218,7 @@ function ObservationSheet({ ctx, initial, onClose }: { ctx: ObservationContext; 
           </label>
           <label className="field">
             <span>{isSale ? 'Vu le' : 'Date'}</span>
-            <input className="input input-mono" type="date" value={o.date} onChange={(e) => set({ date: e.target.value || today() })} />
+            <input className="input input-mono" type="date" value={o.date} max={today()} onChange={(e) => set({ date: e.target.value && e.target.value <= today() ? e.target.value : today() })} />
           </label>
         </div>
 

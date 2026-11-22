@@ -505,7 +505,7 @@ function ReportSheet({ workId, onClose }: { workId: string; onClose: () => void 
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   async function send() {
-    if (!reason.trim()) return;
+    if (reason.trim().length < 10) return;
     setBusy(true);
     try {
       await api.report(workId, reason.trim());
@@ -533,9 +533,12 @@ function ReportSheet({ workId, onClose }: { workId: string; onClose: () => void 
         </div>
         <label className="field">
           <span>Qu’est-ce qui ne va pas ?</span>
-          <textarea className="textarea" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} placeholder="Mauvaise œuvre, date erronée, phrase fausse…" />
+          <textarea className="textarea" value={reason} onChange={(e) => setReason(e.target.value)} minLength={10} maxLength={1000} required aria-describedby="report-help" placeholder="Mauvaise œuvre, date erronée, phrase fausse…" />
+          <span id="report-help" className="t-small t-muted">
+            {reason.trim().length > 0 && reason.trim().length < 10 ? 'Précisez un peu plus, en une phrase.' : 'Le signalement est relu avant toute correction.'}
+          </span>
         </label>
-        <button type="submit" className="btn btn-block" disabled={busy || !reason.trim()}>
+        <button type="submit" className="btn btn-block" disabled={busy || reason.trim().length < 10}>
           Envoyer
         </button>
       </form>

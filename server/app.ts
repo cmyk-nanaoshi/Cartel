@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
 import { streamSSE } from 'hono/streaming';
 import type { ArtworkEntry, ChatRequest, EntryRequest, ServerConfig } from '../shared/types.js';
 import { loadConfig, type AppConfig } from './config.js';
@@ -37,6 +38,9 @@ export function createApp(deps: AppDeps = {}) {
   void store.counts().catch((e) => console.error('Base des fiches : initialisation impossible.', e?.message ?? e));
 
   const app = new Hono();
+
+  // En-têtes de sécurité : HTTPS imposé au navigateur (HSTS), pas d'intégration dans un cadre tiers, pas de reniflage de type.
+  app.use('*', secureHeaders({ strictTransportSecurity: 'max-age=31536000; includeSubDomains', xFrameOptions: 'DENY', referrerPolicy: 'strict-origin-when-cross-origin', crossOriginResourcePolicy: false, crossOriginEmbedderPolicy: false, contentSecurityPolicy: undefined }));
 
   // L'administration vit à sa propre adresse : seule celle-ci est autorisée, et seulement sur l'API.
   if (cfg.adminOrigin) app.use('/api/*', cors({ origin: cfg.adminOrigin, allowHeaders: ['content-type', 'x-admin-code', 'x-access-code'], allowMethods: ['GET', 'POST', 'DELETE'] }));
@@ -152,7 +156,7 @@ export function createApp(deps: AppDeps = {}) {
   app.post('/api/report', limited, async (c) => {
     const body = (await c.req.json().catch(() => null)) as { workId?: string; reason?: string } | null;
     const reason = String(body?.reason ?? '').trim().slice(0, 1000);
-    if (!body?.workId || !reason) throw new InputError('Précisez ce qui ne va pas.');
+    if (!body?.workId || reason.length < 10) throw new InputError('Précisez ce qui ne va pas, en une phrase.');
     const ok = await store.report(String(body.workId), reason);
     if (!ok) throw new InputError('Fiche introuvable.', 404);
     return c.json({ ok: true });

@@ -14,6 +14,7 @@ import { Collection } from './pages/Collection';
 import { Search } from './pages/Search';
 import { Random } from './pages/Random';
 import { Profile } from './pages/Profile';
+import { NotFound } from './pages/NotFound';
 
 // La carte (Leaflet) n'est chargée qu'à la demande.
 const MapPage = lazy(() => import('./pages/MapPage'));
@@ -51,7 +52,7 @@ export function App() {
                 <Route path="/profil" element={<Profile />} />
                 {/* L'administration est une app séparée (admin.html), absente de cette version publique. */}
                 <Route path="/admin" element={<Navigate to="/" replace />} />
-                <Route path="*" element={<div className="page">Page introuvable.</div>} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </div>
