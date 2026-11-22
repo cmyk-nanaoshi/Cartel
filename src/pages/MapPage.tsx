@@ -7,6 +7,7 @@ import type { MapPlace } from '../../shared/types';
 import { db } from '../lib/db';
 import { api } from '../lib/api';
 import { Icon, Notice } from '../components/ui';
+import { TopBar } from '../components/Chrome';
 
 // Fond de carte OpenStreetMap (attribution obligatoire). Pour un usage intensif, la politique
 // d'utilisation des tuiles OSM demande un autre fournisseur : VITE_TILE_URL permet d'en changer.
@@ -128,6 +129,8 @@ export default function MapPage() {
   }
 
   return (
+    <>
+    <TopBar back="Viseur" backTo="/" />
     <main className="map-wrap">
       <div ref={el} className="map" aria-label="Carte des musées et œuvres" />
       <div className="map-panel">
@@ -153,5 +156,6 @@ export default function MapPage() {
         </div>
       )}
     </main>
+    </>
   );
 }

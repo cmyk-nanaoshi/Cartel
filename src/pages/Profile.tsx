@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { db, exportBackup, getSetting, importBackup, setSetting } from '../lib/db';
 import { download } from '../lib/export';
 import { Notice, useConfig, useToast } from '../components/ui';
 import { getLang, setLang, t, type Lang } from '../i18n';
+import { TopBar } from '../components/Chrome';
+import { getAppearance, setAppearance, type Appearance } from '../lib/theme';
 
 export function Profile() {
   const { config, error, reload } = useConfig();
   const toast = useToast();
   const [code, setCode] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [appearance, setAppearanceState] = useState<Appearance>(getAppearance());
   const [geo, setGeo] = useState(false);
   const [lang, setLangState] = useState<Lang>(getLang());
   const [counts, setCounts] = useState({ artworks: 0, analyses: 0, entries: 0 });
@@ -18,7 +19,6 @@ export function Profile() {
   useEffect(() => {
     (async () => {
       setCode((await getSetting<string>('accessCode')) ?? '');
-      setIsAdmin(!!(await getSetting<string>('adminCode')));
       setGeo((await getSetting<boolean>('saveLocation')) ?? false);
       setCounts({ artworks: await db.artworks.count(), analyses: await db.analyses.count(), entries: await db.entries.count() });
     })();
@@ -68,48 +68,30 @@ export function Profile() {
   }
 
   return (
-    <main className="page">
-      <header className="pagehead">
-        <h1 className="t-display">{t('profile.title')}</h1>
-      </header>
+    <main>
+      <TopBar back="Viseur" backTo="/" />
+      <div className="page" style={{ paddingTop: 8 }}>
+      <h1 className="t-display" style={{ marginBottom: 24 }}>{t('profile.title')}</h1>
 
       <div className="grid">
         <section className="span-all md-span-4 lg-span-6 stack-16">
-          <h2 className="t-head">Intelligence artificielle</h2>
+          <h2 className="rubric">Apparence</h2>
+          <div className="segmented" role="group" aria-label="Apparence" style={{ display: 'flex' }}>
+            {(
+              [
+                ['auto', 'Automatique'],
+                ['light', 'Clair'],
+                ['dark', 'Sombre']
+              ] as const
+            ).map(([v, l]) => (
+              <button key={v} style={{ flex: 1, paddingInline: 8 }} aria-pressed={appearance === v} onClick={() => { setAppearanceState(v); setAppearance(v); }}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <p className="t-small t-muted">Automatique suit le réglage du téléphone.</p>
           {error && <Notice kind="error" title="Serveur injoignable">{error}</Notice>}
-          {config && (
-            <>
-              {config.demo ? (
-                <Notice title="Mode démonstration">
-                  Aucune IA n’est connectée au serveur. L’identification renvoie des hypothèses fixes, les fiches sont construites à partir des notices seules et le cartel est lu par OCR local. Ajoutez ANTHROPIC_API_KEY côté serveur pour activer Claude.
-                </Notice>
-              ) : (
-                <dl className="kv">
-                  <dt>Fournisseur</dt>
-                  <dd>{config.provider === 'anthropic' ? 'Anthropic (API Claude)' : config.provider}</dd>
-                  <dt>Identification</dt>
-                  <dd>{config.models.vision}</dd>
-                  <dt>Rédaction</dt>
-                  <dd>{config.models.text}</dd>
-                  <dt>Questions</dt>
-                  <dd>{config.models.chat}</dd>
-                  {config.costPerScanUsd && (
-                    <>
-                      <dt>Coût d’un scan</dt>
-                      <dd className="num">
-                        {config.costPerScanUsd.low.toFixed(3)} à {config.costPerScanUsd.high.toFixed(3)} $ (estimation)
-                      </dd>
-                    </>
-                  )}
-                  <dt>Dépensé aujourd’hui</dt>
-                  <dd className="num">
-                    {config.limits.spentTodayUsd.toFixed(3)} $ sur {config.limits.dailyBudgetUsd} $ autorisés
-                  </dd>
-                </dl>
-              )}
-              <p className="t-small t-faint">Les clés API restent sur le serveur. Les réponses déjà obtenues sont mises en cache pour ne pas payer deux fois la même analyse.</p>
-            </>
-          )}
+          {config?.demo && <Notice title="Mode démonstration">Les résultats d’identification sont simulés et les fiches sont construites à partir des notices seules.</Notice>}
           {(config?.accessCodeRequired || code) && (
             <div className="stack-8">
               <label className="field">
@@ -122,7 +104,7 @@ export function Profile() {
             </div>
           )}
 
-          <h2 className="t-head" style={{ paddingTop: 16 }}>Sources documentaires</h2>
+          <h2 className="rubric" style={{ paddingTop: 16 }}>Sources documentaires</h2>
           <ul className="list-plain">
             {config?.sources.map((s) => (
               <li key={s.id}>
@@ -139,7 +121,7 @@ export function Profile() {
         </section>
 
         <section className="span-all md-span-4 lg-span-5 lg-start-8 stack-16">
-          <h2 className="t-head">Préférences</h2>
+          <h2 className="rubric">Préférences</h2>
           <fieldset className="stack-8" style={{ border: 0, padding: 0, margin: 0 }}>
             <legend className="t-small t-muted">Langue de l’interface</legend>
             <div className="chips">
@@ -159,15 +141,15 @@ export function Profile() {
               ))}
             </div>
           </fieldset>
-          <label className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
-            <input type="checkbox" checked={geo} onChange={(e) => toggleGeo(e.target.checked)} style={{ width: 20, height: 20, marginTop: 2 }} />
+          <label className="check">
+            <input type="checkbox" checked={geo} onChange={(e) => toggleGeo(e.target.checked)} />
             <span>
               <span style={{ display: 'block', fontWeight: 600 }}>Enregistrer le lieu de mes découvertes</span>
               <span className="t-small t-muted">Désactivé par défaut. La position reste sur cet appareil, elle n’est jamais envoyée au serveur d’analyse.</span>
             </span>
           </label>
 
-          <h2 className="t-head" style={{ paddingTop: 16 }}>Données</h2>
+          <h2 className="rubric" style={{ paddingTop: 16 }}>Données</h2>
           <dl className="kv">
             <dt>Œuvres enregistrées</dt>
             <dd className="num">{counts.artworks}</dd>
@@ -180,28 +162,23 @@ export function Profile() {
             Tout est stocké sur ce téléphone. Pour changer d’appareil, exportez une sauvegarde puis importez-la sur le nouveau.
           </p>
           <div className="row">
-            <button className="btn btn-ghost btn-small" onClick={backup}>
+            <button className="btn btn-secondary btn-small" onClick={backup}>
               Exporter une sauvegarde
             </button>
-            <button className="btn btn-ghost btn-small" onClick={() => fileRef.current?.click()}>
+            <button className="btn btn-secondary btn-small" onClick={() => fileRef.current?.click()}>
               Importer une sauvegarde
             </button>
-            <button className="btn btn-ghost btn-small" onClick={clearCache}>
+            <button className="btn btn-secondary btn-small" onClick={clearCache}>
               Vider le cache
             </button>
           </div>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={restore} />
 
-          {/* Lien visible seulement sur l'appareil où le code d'administration a été saisi (sinon : /admin). */}
-          {isAdmin && (
-            <Link className="btn btn-ghost btn-small" to="/admin">
-              Administration des fiches
-            </Link>
-          )}
           <p className="t-small t-faint" style={{ paddingTop: 16 }}>
             Cartel 0.1. Données des notices : Joconde (Licence Ouverte), Wikidata (CC0), Art Institute of Chicago et Met (CC0). Fond de carte © OpenStreetMap.
           </p>
         </section>
+      </div>
       </div>
     </main>
   );

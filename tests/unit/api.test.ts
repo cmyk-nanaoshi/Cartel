@@ -154,7 +154,7 @@ describe('API /api/entry', () => {
     const e = (await res.json()) as ArtworkEntry;
     expect(e.aiWritten).toBe(false);
     expect(e.technique).toBe('Oil on canvas');
-    expect(e.warnings.join(' ')).toMatch(/Rédaction par IA indisponible/);
+    expect(e.warnings.join(' ')).toMatch(/Rédaction automatique indisponible/);
   });
 });
 

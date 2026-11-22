@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom';
-import { ConfigProvider, DemoRibbon, Icon, ToastProvider } from './components/ui';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { ConfigProvider, DemoRibbon, ToastProvider } from './components/ui';
 import { t } from './i18n';
-import { Home } from './pages/Home';
+import { getSetting } from './lib/db';
+import { Welcome } from './pages/Welcome';
 import { Scan } from './pages/Scan';
 import { Analyzing } from './pages/Analyzing';
 import { Results } from './pages/Results';
@@ -13,41 +14,18 @@ import { Collection } from './pages/Collection';
 import { Search } from './pages/Search';
 import { Random } from './pages/Random';
 import { Profile } from './pages/Profile';
-import { Admin } from './pages/Admin';
 
 // La carte (Leaflet) n'est chargée qu'à la demande.
 const MapPage = lazy(() => import('./pages/MapPage'));
 
-function TabBar() {
-  const loc = useLocation();
-  if (loc.pathname === '/scanner' || loc.pathname === '/analyse') return null;
-  const cls = ({ isActive }: { isActive: boolean }) => (isActive ? 'active' : '');
-  return (
-    <nav className="tabbar" aria-label="Navigation principale">
-      <NavLink to="/" end className={cls}>
-        <Icon name="home" />
-        <span>{t('nav.home')}</span>
-      </NavLink>
-      <NavLink to="/carte" className={cls}>
-        <Icon name="map" />
-        <span>{t('nav.map')}</span>
-      </NavLink>
-      <NavLink to="/scanner" className="scan" aria-label={t('nav.scan')}>
-        <span className="scan-disc">
-          <Icon name="scan" />
-        </span>
-        <span>{t('nav.scan')}</span>
-      </NavLink>
-      <NavLink to="/collection" className={cls}>
-        <Icon name="grid" />
-        <span>{t('nav.collection')}</span>
-      </NavLink>
-      <NavLink to="/profil" className={cls}>
-        <Icon name="user" />
-        <span>{t('nav.profile')}</span>
-      </NavLink>
-    </nav>
-  );
+/** Navigation C2 : l'app s'ouvre sur le viseur. La première fois, l'écran de bienvenue passe avant. */
+function Start() {
+  const [welcomed, setWelcomed] = useState<boolean | null>(null);
+  useEffect(() => {
+    getSetting<boolean>('welcomed').then((w) => setWelcomed(!!w));
+  }, []);
+  if (welcomed === null) return null;
+  return welcomed ? <Scan /> : <Welcome onDone={() => setWelcomed(true)} />;
 }
 
 export function App() {
@@ -59,7 +37,7 @@ export function App() {
             <DemoRibbon />
             <Suspense fallback={<div className="page t-muted">{t('common.loading')}</div>}>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Start />} />
                 <Route path="/scanner" element={<Scan />} />
                 <Route path="/analyse" element={<Analyzing />} />
                 <Route path="/resultats" element={<Results />} />
@@ -71,11 +49,11 @@ export function App() {
                 <Route path="/hasard" element={<Random />} />
                 <Route path="/carte" element={<MapPage />} />
                 <Route path="/profil" element={<Profile />} />
-                <Route path="/admin" element={<Admin />} />
+                {/* L'administration est une app séparée (admin.html), absente de cette version publique. */}
+                <Route path="/admin" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<div className="page">Page introuvable.</div>} />
               </Routes>
             </Suspense>
-            <TabBar />
           </div>
         </BrowserRouter>
       </ToastProvider>

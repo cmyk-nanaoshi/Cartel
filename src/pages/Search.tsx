@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import type { SourceRecord } from '../../shared/types';
 import { candidateFromRecord } from '../../shared/slug';
 import { api, museumImg } from '../lib/api';
-import { BackLink, Notice } from '../components/ui';
+import { Notice } from '../components/ui';
+import { TopBar } from '../components/Chrome';
+import { MOVEMENTS } from '../lib/movements';
 import { t } from '../i18n';
 
 export function RecordGrid({ records }: { records: SourceRecord[] }) {
@@ -13,10 +15,10 @@ export function RecordGrid({ records }: { records: SourceRecord[] }) {
     nav(`/oeuvre/${encodeURIComponent(c.key)}`, { state: { candidate: c } });
   };
   return (
-    <div className="works">
+    <div className="works-2">
       {records.map((r) => (
         <button key={r.id} className="work" onClick={() => open(r)} style={{ background: 'none', border: 0, padding: 0, textAlign: 'left', cursor: 'pointer' }}>
-          <div className="work-frame contain">
+          <div className="work-frame">
             {r.thumbnailUrl || r.imageUrl ? (
               <img
                 src={museumImg(r.thumbnailUrl ?? r.imageUrl)}
@@ -33,9 +35,8 @@ export function RecordGrid({ records }: { records: SourceRecord[] }) {
             )}
           </div>
           <div className="work-label">
-            <span className="artist">{r.artist ?? 'Artiste inconnu'}</span>
             <span className="work-title">{r.title ?? 'Sans titre'}</span>
-            <span className="t-muted">{[r.date, r.sourceLabel].filter(Boolean).join(', ')}</span>
+            <span className="mono">{[r.artist ?? 'Artiste inconnu', r.date].filter(Boolean).join(' · ')}</span>
           </div>
         </button>
       ))}
@@ -74,47 +75,66 @@ export function Search() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const empty = !records && !loading && !params.get('q') && !params.get('title') && !params.get('artist');
   return (
-    <main className="page">
-      <BackLink />
-      <header className="pagehead">
+    <main>
+      <TopBar back="Viseur" backTo="/" />
+      <div className="page" style={{ paddingTop: 8 }}>
         <h1 className="t-display">{label ?? t('search.title')}</h1>
-      </header>
-      <form
-        className="grid"
-        style={{ rowGap: 12 }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const p = Object.fromEntries(Object.entries({ title, artist, q }).filter(([, v]) => v.trim()));
-          setParams(p, { replace: true });
-          run(p);
-        }}
-      >
-        <label className="field span-all md-span-3 lg-span-4">
-          <span>Titre</span>
-          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="La Liberté guidant le peuple" />
-        </label>
-        <label className="field span-all md-span-3 lg-span-4">
-          <span>Artiste</span>
-          <input className="input" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Delacroix" />
-        </label>
-        <label className="field span-all md-span-2 lg-span-4">
-          <span>Mot-clé, mouvement</span>
-          <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Impressionism" />
-        </label>
-        <div className="span-all">
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? <span className="spinner" /> : null} Rechercher dans les catalogues
-          </button>
-        </div>
-      </form>
+        <form
+          style={{ marginTop: 16 }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const p: Record<string, string> = q.trim() ? { q: q.trim() } : {};
+            setParams(p, { replace: true });
+            run(p);
+          }}
+        >
+          <label className="field">
+            <span>Titre, artiste ou musée</span>
+            <input className="input" type="search" enterKeyHint="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Artiste, titre, mouvement…" />
+          </label>
+        </form>
 
-      <div className="stack-16" style={{ marginTop: 32 }}>
-        {errors.map((e) => (
-          <Notice key={e}>{e}</Notice>
-        ))}
-        {records && !loading && (records.length ? <RecordGrid records={records} /> : <p className="t-muted">Aucune notice trouvée. Essayez le titre original ou en anglais.</p>)}
-        <p className="t-small t-faint">Ouvrir une œuvre génère sa fiche (appel à l’IA si elle est configurée).</p>
+        {empty ? (
+          <div style={{ marginTop: 32 }}>
+            <h2 className="rubric">Par mouvement</h2>
+            <div className="chips">
+              {MOVEMENTS.map((m) => (
+                <button
+                  key={m.query}
+                  type="button"
+                  className="chip"
+                  onClick={() => {
+                    setQ(m.query);
+                    setParams({ q: m.query, label: m.label }, { replace: true });
+                    run({ q: m.query });
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <h2 className="rubric" style={{ marginTop: 32 }}>Sans idée précise</h2>
+            <Link className="btn btn-secondary btn-block" to="/hasard">
+              Œuvres au hasard
+            </Link>
+            <p className="t-small t-muted" style={{ marginTop: 8 }}>Douze œuvres tirées au hasard dans le domaine public de l’Art Institute of Chicago.</p>
+          </div>
+        ) : (
+          <div className="stack-16" style={{ marginTop: 24 }}>
+            {loading && <p className="row t-muted"><span className="spinner" /> Recherche dans les catalogues…</p>}
+            {errors.map((e) => (
+              <Notice key={e}>{e}</Notice>
+            ))}
+            {records && !loading && (records.length ? (
+              <>
+                <h2 className="rubric">Dans les catalogues</h2>
+                <RecordGrid records={records} />
+              </>
+            ) : <p className="t-muted">Aucune notice trouvée. Essayez le titre original ou en anglais.</p>)}
+          </div>
+        )}
       </div>
     </main>
   );

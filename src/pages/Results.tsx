@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { Candidate } from '../../shared/types';
 import { OBJECT_KIND_LABEL } from '../../shared/types';
 import { useSession } from '../lib/session';
-import { BackLink, Meter, Notice } from '../components/ui';
+import { Icon, Meter, Notice } from '../components/ui';
+import { TopBar } from '../components/Chrome';
 import { museumImg } from '../lib/api';
 import { frNumber, frTypo } from '../../shared/typo';
 
@@ -51,24 +52,18 @@ export function Results() {
 
   return (
     <main>
-      <div className="wall">
-        <div className="page" style={{ paddingBottom: 24 }}>
-          <div className="grid" style={{ alignItems: 'end' }}>
-            <div className="span-half md-span-3 lg-span-3">{photoUrl && <img src={photoUrl} alt="Votre photo" style={{ display: 'block', width: 'auto', maxWidth: '100%', maxHeight: 280, borderRadius: 'var(--radius-img)' }} />}</div>
-            <div className="span-half md-span-5 lg-span-8 stack-8">
-              <p className="t-small" style={{ color: 'var(--wall-ink-2)' }}>
-                {OBJECT_KIND_LABEL[r.vision.objectKind]}
-                {r.cached ? ', résultat déjà en cache' : ''}
-              </p>
-              <h1 className="t-title">{st.title}</h1>
-              <p className="t-small" style={{ color: 'var(--wall-ink-2)' }}>{st.text}</p>
-            </div>
-          </div>
-        </div>
+      <TopBar back="Viseur" backTo="/" />
+      <div className="page" style={{ paddingTop: 8, paddingBottom: 0 }}>
+        <h1 className="t-title">{st.title}</h1>
+        <p className="t-muted" style={{ marginTop: 8 }}>{st.text}</p>
+        {(r.status === 'ambiguous' || r.candidates.length > 1) && (
+          <Link className="btn btn-block" to="/scanner?mode=cartel" style={{ marginTop: 16 }}>
+            <Icon name="camera" size={20} /> Photographier le cartel
+          </Link>
+        )}
       </div>
 
       <div className="page stack-24">
-        <BackLink to="/scanner" label="Nouvelle photo" />
         {r.warnings.map((w) => (
           <Notice key={w}>{w}</Notice>
         ))}
@@ -79,57 +74,46 @@ export function Results() {
 
         {r.candidates.length > 0 && (
           <section aria-label="Correspondances">
-            {r.candidates.map((c, i) => (
+            <h2 className="rubric">Dans les catalogues</h2>
+            {r.candidates.map((c) => (
               <article key={c.key} className="candidate">
-                {c.imageUrl && !broken.has(c.key) ? (
-                  <img
-                    className="candidate-img"
-                    src={museumImg(c.imageUrl)}
-                    alt={`Reproduction : ${c.title}`}
-                    loading="lazy"
-                    onError={() => setBroken((b) => new Set(b).add(c.key))}
-                  />
-                ) : photoUrl ? (
-                  <img className="candidate-img" src={photoUrl} alt="Votre photo" />
-                ) : (
-                  <div className="candidate-img placeholder">Pas de reproduction</div>
-                )}
-                <div className="stack-8">
-                  <div>
-                    <div className="artist">{c.artist}</div>
-                    <div className="work-title" style={{ fontSize: 'var(--t-l)', lineHeight: 'var(--lh-l)' }}>
-                      {c.title}
-                      {c.date ? <span style={{ fontStyle: 'normal' }}>, {c.date}</span> : null}
-                    </div>
-                  </div>
-                  <Meter c={c} />
-                  {c.labelConfirmed && <p className="t-small state-ok">Confirmé par le cartel lu sur la photo</p>}
-                  {(c.records.length > 0 || !c.labelConfirmed) && (
-                    <p className={`t-small ${c.records.length ? 'state-ok' : 'state-warn'}`}>
-                      {frTypo(c.records.length ? `Notice trouvée : ${sourceNames(c)}` : 'Aucune notice concordante dans les catalogues interrogés')}
-                    </p>
+                <button className="candidate-open" onClick={() => open(c)} aria-label={`Ouvrir la fiche : ${c.title}`}>
+                  {c.imageUrl && !broken.has(c.key) ? (
+                    <img className="candidate-img" src={museumImg(c.imageUrl)} alt="" loading="lazy" onError={() => setBroken((b) => new Set(b).add(c.key))} />
+                  ) : photoUrl ? (
+                    <img className="candidate-img" src={photoUrl} alt="" />
+                  ) : (
+                    <div className="candidate-img placeholder">Pas de reproduction</div>
                   )}
-                  <dl className="signals">
-                    <dt>Estimation de l’IA</dt>
-                    <dd className="num">{Math.round(c.signals.model * 100)} %</dd>
-                    <dt>Titre et artiste</dt>
-                    <dd className="num">{c.signals.text === null ? 'aucune notice' : `${Math.round(c.signals.text * 100)} % de concordance`}</dd>
-                    <dt>Ressemblance d’image</dt>
-                    <dd className="num">{c.signals.visual === null ? 'non mesurée (pas d’image de référence)' : `${Math.round(c.signals.visual * 100)} %`}</dd>
-                  </dl>
-                  {c.reasoning && <p className="t-small t-muted">{frTypo(c.reasoning)}</p>}
-                  {(r.status === 'ambiguous' || i > 0) && c.distinguishing && (
-                    <p className="t-small">
-                      <span className="t-faint">Pour départager : </span>
-                      {frTypo(c.distinguishing)}
-                    </p>
-                  )}
-                  <div>
-                    <button className={`btn btn-small ${i === 0 ? '' : 'btn-ghost'}`} onClick={() => open(c)}>
-                      Ouvrir la fiche
-                    </button>
+                  <span className="stack-4">
+                    <span className="artist" style={{ display: 'block' }}>{c.artist}</span>
+                    <span className="work-title" style={{ display: 'block', fontSize: 17, lineHeight: '24px' }}>{c.title}</span>
+                    <span className="mono t-muted" style={{ display: 'block' }}>{frTypo([sourceNames(c), c.date].filter(Boolean).join(' · ') || 'Aucune notice concordante')}</span>
+                  </span>
+                </button>
+                {c.labelConfirmed && <p className="t-small state-ok">Confirmé par le cartel lu sur la photo</p>}
+                {!c.labelConfirmed && !c.records.length && <p className="t-small state-warn">Aucune notice concordante dans les catalogues interrogés</p>}
+                <details className="t-small">
+                  <summary style={{ cursor: 'pointer', color: 'var(--ink-2)' }}>Pourquoi cette proposition</summary>
+                  <div className="stack-8" style={{ paddingTop: 8 }}>
+                    <Meter c={c} />
+                    <dl className="signals">
+                      <dt>Estimation</dt>
+                      <dd className="num">{Math.round(c.signals.model * 100)} %</dd>
+                      <dt>Titre et artiste</dt>
+                      <dd className="num">{c.signals.text === null ? 'aucune notice' : `${Math.round(c.signals.text * 100)} % de concordance`}</dd>
+                      <dt>Ressemblance d’image</dt>
+                      <dd className="num">{c.signals.visual === null ? 'non mesurée (pas d’image de référence)' : `${Math.round(c.signals.visual * 100)} %`}</dd>
+                    </dl>
+                    {c.reasoning && <p className="t-muted">{frTypo(c.reasoning)}</p>}
+                    {c.distinguishing && (
+                      <p>
+                        <span className="t-faint">Pour départager : </span>
+                        {frTypo(c.distinguishing)}
+                      </p>
+                    )}
                   </div>
-                </div>
+                </details>
               </article>
             ))}
           </section>
@@ -137,7 +121,7 @@ export function Results() {
 
         {r.leads && (
           <section className="stack-16" aria-label="Pistes">
-            <h2 className="t-head">Pistes</h2>
+            <h2 className="rubric">Pistes</h2>
             {r.leads.artist && (
               <div className="stack-8">
                 <p className="t-small t-muted">{r.leads.artistBasis === 'cartel' ? 'Nom lu sur le cartel' : 'Nom lu dans la signature'}</p>
@@ -150,7 +134,7 @@ export function Results() {
                   <p className="t-small t-muted">Cet artiste n’apparaît pas dans les catalogues de musées interrogés. C’est fréquent pour les artistes vus en galerie ou en vente.</p>
                 )}
                 <div className="row">
-                  <Link className="btn btn-ghost btn-small" to={`/recherche?artist=${encodeURIComponent(r.leads.artist)}`}>
+                  <Link className="btn btn-secondary btn-small" to={`/recherche?artist=${encodeURIComponent(r.leads.artist)}`}>
                     Voir cet artiste dans les catalogues
                   </Link>
                 </div>
@@ -166,7 +150,7 @@ export function Results() {
         )}
 
         <section className="stack-16">
-          <h2 className="t-head">Ce que l’IA voit sur la photo</h2>
+          <h2 className="rubric">Ce que montre la photo</h2>
           <p className="reading measure">{frTypo(r.vision.description)}</p>
           {(r.vision.visibleText.length > 0 || r.vision.inscriptions.length > 0) && (
             <dl className="kv">
@@ -195,24 +179,17 @@ export function Results() {
         </section>
 
         <section className="stack-8">
-          <h2 className="t-head">Aucune ne correspond ?</h2>
+          <h2 className="rubric">Aucune ne correspond ?</h2>
           <div className="row">
-            <Link className="btn btn-ghost btn-small" to="/scanner?mode=cartel">
+            <Link className="btn btn-secondary btn-small" to="/scanner?mode=cartel">
               Photographier le cartel
             </Link>
-            <Link className="btn btn-ghost btn-small" to="/recherche">
+            <Link className="btn btn-secondary btn-small" to="/recherche">
               Chercher par titre ou artiste
             </Link>
           </div>
         </section>
 
-        {r.usage && r.usage.estimatedCostUsd > 0 && (
-          <p className="t-small t-faint">
-            {frTypo(
-              `Analyse : ${r.usage.model}, ${frNumber(r.usage.inputTokens + r.usage.outputTokens, 0)} jetons, environ ${frNumber(r.usage.estimatedCostUsd, 3)} $.`
-            )}
-          </p>
-        )}
       </div>
     </main>
   );

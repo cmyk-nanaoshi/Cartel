@@ -11,7 +11,7 @@ export const fr = {
   'home.movements': 'Explorer un mouvement',
   'scan.artwork': 'Œuvre',
   'scan.label': 'Cartel',
-  'scan.hintArtwork': 'Cadrez l’œuvre entière, de face, sans reflet.',
+  'scan.hintArtwork': 'Cadrez l’œuvre entière. Vous pourrez photographier le cartel juste après.',
   'scan.hintLabel': 'Cadrez le cartel de près, texte bien net.',
   'scan.import': 'Importer',
   'scan.take': 'Prendre la photo',
@@ -29,7 +29,7 @@ export const fr = {
   'search.title': 'Rechercher',
   'random.title': 'Au hasard',
   'map.title': 'Carte',
-  'profile.title': 'Profil et réglages',
+  'profile.title': 'Profil',
   'common.back': 'Retour',
   'common.loading': 'Chargement…',
   'common.error': 'Une erreur est survenue.'

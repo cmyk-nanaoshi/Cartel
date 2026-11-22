@@ -126,7 +126,7 @@ export class Services {
       }
     }
     if (!vision.signedArtist && vision.label?.artist) vision.signedArtist = vision.label.artist;
-    if (this.ai.demo) warnings.push('Mode démonstration : aucune IA n’a analysé la photo.');
+    if (this.ai.demo) warnings.push('Mode démonstration : la photo n’a pas été analysée.');
 
     if (!vision.isArtwork) {
       return this.finish(cacheKey, { analysisId: hash, status: 'not_artwork', vision, candidates: [], warnings, usage });
@@ -344,7 +344,7 @@ export class Services {
     const base = baseEntry(c, sources, comparables, { ...req, label: shareable ? undefined : req.label, vision: req.vision && { ...req.vision, inscriptions: [] } }, this.ai);
 
     if (this.ai.demo) {
-      base.warnings.push('Mode démonstration : fiche construite uniquement à partir des notices, sans rédaction par IA.');
+      base.warnings.push('Mode démonstration : fiche construite uniquement à partir des notices, sans texte rédigé.');
       await this.cache.set(key, base, 60 * 60 * 24);
       return base;
     }
@@ -407,7 +407,7 @@ export class Services {
       return entry;
     } catch (e) {
       if (e instanceof AIError) {
-        base.warnings.push(`Rédaction par IA indisponible (${e.message}). Fiche construite à partir des notices seules.`);
+        base.warnings.push(`Rédaction automatique indisponible (${e.message}). Fiche construite à partir des notices seules.`);
         return base;
       }
       throw e;

@@ -13,7 +13,7 @@ export const DEMO_VISION: VisionAnalysis = {
   imageQualityIssue: null,
   objectKind: 'peinture',
   description:
-    'Mode démonstration : aucune IA n’a regardé votre photo. Les hypothèses ci-dessous sont fixes et servent à tester la vérification dans les bases de musées.',
+    'Mode démonstration : la photo n’a pas été analysée. Les hypothèses ci-dessous sont fixes et servent à tester la vérification dans les bases de musées.',
   visibleText: [],
   inscriptions: [],
   hypotheses: [
@@ -45,12 +45,12 @@ export class DemoProvider implements AIProvider {
   async json<T>(req: JsonRequest): Promise<{ data: T; usage: UsageInfo }> {
     if (req.task === 'identify') return { data: structuredClone(DEMO_VISION) as T, usage: zero() };
     if (req.task === 'entry') return { data: { objectKind: 'peinture', movement: null, technique: null, artistLine: null, sections: [] } as T, usage: zero() };
-    throw new AIError('Lecture du cartel par IA indisponible en mode démonstration.', 503, 'other');
+    throw new AIError('Lecture automatique du cartel indisponible en mode démonstration.', 503, 'other');
   }
 
   async stream(_req: StreamRequest, onDelta: (t: string) => void): Promise<UsageInfo> {
     const text =
-      'Mode démonstration : l’assistant n’est pas relié à un modèle d’IA. Ajoutez une clé ANTHROPIC_API_KEY côté serveur pour obtenir de vraies réponses, sourcées à partir des notices de cette fiche.';
+      'Mode démonstration : les questions ne sont pas encore reliées au serveur d’analyse. Les vraies réponses s’appuieront sur les notices de cette fiche.';
     for (const word of text.split(/(?<= )/)) {
       onDelta(word);
       await new Promise((r) => setTimeout(r, 12));

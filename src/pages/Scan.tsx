@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Icon } from '../components/ui';
+import { TopBar } from '../components/Chrome';
+import { museumImg } from '../lib/api';
 import { session } from '../lib/session';
 import { preparePhoto } from '../lib/image';
-import { getSetting } from '../lib/db';
+import { db, getSetting } from '../lib/db';
 import { t } from '../i18n';
 
 export function Scan() {
@@ -17,6 +20,9 @@ export function Scan() {
   const [camError, setCamError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Vignette de la dernière œuvre gardée, à côté du déclencheur (maquette du viseur).
+  const last = useLiveQuery(() => db.artworks.orderBy('createdAt').last(), []);
+  const lastUrl = useMemo(() => (last?.photo ? URL.createObjectURL(last.photo) : last?.entry.imageUrl ? museumImg(last.entry.imageUrl) : undefined), [last?.id]);
 
   useEffect(() => {
     let s: MediaStream | null = null;
@@ -97,20 +103,7 @@ export function Scan() {
 
   return (
     <div className="scan-screen">
-      <div className="scan-top">
-        <button className="iconbtn" onClick={() => nav(-1)} aria-label="Fermer">
-          <Icon name="close" />
-        </button>
-        <div className="segmented" role="group" aria-label="Que photographiez-vous ?">
-          <button aria-pressed={mode === 'artwork'} onClick={() => setMode('artwork')}>
-            {t('scan.artwork')}
-          </button>
-          <button aria-pressed={mode === 'label'} onClick={() => setMode('label')}>
-            {t('scan.label')}
-          </button>
-        </div>
-        <span style={{ width: 44 }} />
-      </div>
+      <TopBar />
 
       <div className="viewfinder">
         {stream ? (
@@ -128,18 +121,35 @@ export function Scan() {
         <div className={`corners ${mode === 'label' ? 'label' : ''}`} aria-hidden>
           <i />
         </div>
-        <p className="scan-hint">{busy ? 'Préparation de la photo…' : error ?? (mode === 'artwork' ? t('scan.hintArtwork') : t('scan.hintLabel'))}</p>
+      </div>
+      <p className="scan-hint t-small" style={{ textAlign: 'center' }}>
+        {busy ? 'Préparation de la photo…' : error ?? (mode === 'artwork' ? t('scan.hintArtwork') : t('scan.hintLabel'))}
+      </p>
+      <div className="scan-mode">
+        <div className="segmented" role="group" aria-label="Que photographiez-vous ?">
+          <button aria-pressed={mode === 'artwork'} onClick={() => setMode('artwork')}>
+            {t('scan.artwork')}
+          </button>
+          <button aria-pressed={mode === 'label'} onClick={() => setMode('label')}>
+            {t('scan.label')}
+          </button>
+        </div>
       </div>
 
       <div className="scan-bottom">
-        <button className="scan-side" onClick={() => fileRef.current?.click()} disabled={busy}>
-          <Icon name="image" />
-          {t('scan.import')}
-        </button>
+        <Link className="scan-side" to="/collection" aria-label="Ouvrir la collection">
+          {lastUrl ? <img src={lastUrl} alt="" /> : <span className="ph" />}
+          Collection
+        </Link>
         <button className="shutter" onClick={shoot} disabled={busy} aria-label={t('scan.take')}>
           <i />
         </button>
-        <span />
+        <button className="scan-side right" onClick={() => fileRef.current?.click()} disabled={busy}>
+          <span className="ph" style={{ display: 'grid', placeItems: 'center' }}>
+            <Icon name="image" />
+          </span>
+          {t('scan.import')}
+        </button>
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} data-testid="file-input" />

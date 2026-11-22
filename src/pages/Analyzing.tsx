@@ -38,7 +38,7 @@ export function Analyzing() {
   async function runArtwork() {
     setSteps([
       { label: 'Photo préparée et compressée sur le téléphone', state: 'done' },
-      { label: 'Observation de l’image par l’IA, puis vérification dans les catalogues de musées', state: 'active' }
+      { label: 'Observation de l’image, puis vérification dans les catalogues de musées', state: 'active' }
     ]);
     try {
       const hash = await sha256Hex(s.photo!);
@@ -59,7 +59,7 @@ export function Analyzing() {
   async function runLabel() {
     setSteps([
       { label: 'Photo du cartel préparée', state: 'done' },
-      { label: 'Lecture du texte par l’IA', state: 'active' }
+      { label: 'Lecture du texte du cartel', state: 'active' }
     ]);
     try {
       const r = await api.label(s.labelPhoto!);
@@ -75,7 +75,7 @@ export function Analyzing() {
       // Repli gratuit : OCR exécuté sur le téléphone.
       setSteps([
         { label: 'Photo du cartel préparée', state: 'done' },
-        { label: `Lecture par IA indisponible (${e?.message ?? 'erreur'})`, state: 'done' },
+        { label: `Lecture automatique indisponible (${e?.message ?? 'erreur'})`, state: 'done' },
         { label: 'Lecture du texte sur le téléphone (OCR local)', state: 'active' }
       ]);
     }

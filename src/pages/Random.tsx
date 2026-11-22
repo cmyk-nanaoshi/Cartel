@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { SourceRecord } from '../../shared/types';
 import { api } from '../lib/api';
-import { BackLink, Notice } from '../components/ui';
+import { Notice } from '../components/ui';
+import { TopBar } from '../components/Chrome';
 import { RecordGrid } from './Search';
 import { t } from '../i18n';
 
@@ -29,19 +30,19 @@ export function Random() {
   }, []);
 
   return (
-    <main className="page">
-      <BackLink />
-      <header className="pagehead">
+    <main>
+      <TopBar back="Rechercher" backTo="/recherche" menu={false} />
+      <div className="page" style={{ paddingTop: 8 }}>
         <h1 className="t-display">{t('random.title')}</h1>
-        <button className="btn btn-ghost btn-small" onClick={load} disabled={loading}>
+        <p className="t-small t-muted" style={{ marginTop: 4 }}>
+          Douze œuvres tirées au hasard dans le domaine public de l’Art Institute of Chicago.
+        </p>
+        <button className="btn btn-secondary" style={{ marginTop: 16, marginBottom: 24 }} onClick={load} disabled={loading}>
           {loading ? <span className="spinner" /> : null} Tirer d’autres œuvres
         </button>
-      </header>
-      <p className="t-small t-muted" style={{ marginBottom: 24 }}>
-        Douze œuvres tirées au hasard dans le domaine public de l’Art Institute of Chicago.
-      </p>
-      {error && <Notice kind="error">{error}</Notice>}
-      {records && <RecordGrid records={records} />}
+        {error && <Notice kind="error">{error}</Notice>}
+        {records && <RecordGrid records={records} />}
+      </div>
     </main>
   );
 }

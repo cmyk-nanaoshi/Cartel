@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type SavedArtwork } from '../lib/db';
 import { collectionToCsv, collectionToPdf, download } from '../lib/export';
 import { Icon, WorkTile, useToast } from '../components/ui';
+import { TopBar } from '../components/Chrome';
 import { t } from '../i18n';
 
 type Sort = 'recent' | 'artist' | 'title' | 'date';
@@ -88,7 +89,9 @@ export function Collection() {
   }
 
   return (
-    <main className="page">
+    <main>
+      <TopBar back="Viseur" backTo="/" />
+      <div className="page" style={{ paddingTop: 8 }}>
       <header className="pagehead">
         <h1 className="t-display">{t('collection.title')}</h1>
         <span className="t-small t-muted num">
@@ -178,6 +181,7 @@ export function Collection() {
           </div>
         </div>
       )}
+      </div>
     </main>
   );
 }
