@@ -126,7 +126,7 @@ export class Services {
       }
     }
     if (!vision.signedArtist && vision.label?.artist) vision.signedArtist = vision.label.artist;
-    if (this.ai.demo) warnings.push('Mode démonstration : aucune IA n’a analysé la photo.');
+    if (this.ai.demo) warnings.push('Mode démonstration : la photo n’a pas été analysée.');
 
     if (!vision.isArtwork) {
       return this.finish(cacheKey, { analysisId: hash, status: 'not_artwork', vision, candidates: [], warnings, usage });
@@ -152,7 +152,8 @@ export class Services {
         return { records, errors };
       })
     );
-    for (const s of searches) for (const e of s.errors) if (!warnings.includes(e)) warnings.push(e);
+    // Une source indisponible ne regarde pas le visiteur : on la journalise côté serveur.
+    for (const s of searches) for (const e of s.errors) console.warn('[sources]', e);
 
     // Comparaison visuelle, bornée à 2 images par hypothèse.
     let query: Awaited<ReturnType<typeof fingerprintQuery>> | null = null;
@@ -195,7 +196,7 @@ export class Services {
     candidates.sort((a, b) => b.confidence - a.confidence);
     const status = decideStatus(candidates);
     if (candidates.length && !candidates.some((c) => c.verified || c.labelConfirmed))
-      warnings.push('Aucune notice concordante trouvée dans les bases interrogées : l’identification n’est pas vérifiée.');
+      warnings.push('L’identification n’est pas confirmée.');
     const leads = await this.leadsFor(vision, candidates);
     return this.finish(cacheKey, { analysisId: hash, status, vision, candidates, warnings, usage, leads });
   }
@@ -344,7 +345,7 @@ export class Services {
     const base = baseEntry(c, sources, comparables, { ...req, label: shareable ? undefined : req.label, vision: req.vision && { ...req.vision, inscriptions: [] } }, this.ai);
 
     if (this.ai.demo) {
-      base.warnings.push('Mode démonstration : fiche construite uniquement à partir des notices, sans rédaction par IA.');
+      base.warnings.push('Mode démonstration : fiche construite sans texte rédigé.');
       await this.cache.set(key, base, 60 * 60 * 24);
       return base;
     }
@@ -393,7 +394,7 @@ export class Services {
         usage
       };
       if (entry.sections.some((s) => s.claims.some((cl) => cl.unsourced)))
-        entry.warnings.push('Certaines affirmations présentées comme des faits n’étaient étayées par aucune source : elles sont signalées comme non sourcées.');
+        entry.warnings.push('Certaines affirmations présentées comme des faits ne s’appuient sur aucune source : elles portent l’étiquette « À vérifier ».');
       if (shareable) {
         try {
           const stored = { ...entry, usage: undefined, verification: undefined };
@@ -407,7 +408,7 @@ export class Services {
       return entry;
     } catch (e) {
       if (e instanceof AIError) {
-        base.warnings.push(`Rédaction par IA indisponible (${e.message}). Fiche construite à partir des notices seules.`);
+        base.warnings.push(`Rédaction automatique indisponible (${e.message}). Fiche construite sans texte rédigé.`);
         return base;
       }
       throw e;
@@ -610,7 +611,7 @@ export function baseEntry(
     demo: ai.demo,
     aiWritten: false,
     generatedAt: new Date().toISOString(),
-    warnings: records.some((r) => r.source !== 'cartel') ? [] : ['Aucune notice de musée n’a été trouvée pour cette œuvre.']
+    warnings: records.some((r) => r.source !== 'cartel') ? [] : []
   };
 }
 

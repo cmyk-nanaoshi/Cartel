@@ -4,7 +4,8 @@ import type { LabelFields, SourceRecord } from '../../shared/types';
 import { candidateFromRecord, entryKey, slugify } from '../../shared/slug';
 import { session, useSession } from '../lib/session';
 import { api } from '../lib/api';
-import { BackLink, Notice } from '../components/ui';
+import { Notice } from '../components/ui';
+import { TopBar } from '../components/Chrome';
 
 const FIELDS: [keyof LabelFields, string][] = [
   ['artist', 'Artiste'],
@@ -75,8 +76,9 @@ export function LabelReview() {
   }
 
   return (
-    <main className="page">
-      <BackLink to="/scanner?mode=cartel" label="Reprendre la photo" />
+    <main>
+      <TopBar back="Reprendre la photo" backTo="/scanner?mode=cartel" menu={false} />
+      <div className="page" style={{ paddingTop: 8 }}>
       <header className="pagehead">
         <h1 className="t-title">Vérifiez le cartel</h1>
       </header>
@@ -85,8 +87,8 @@ export function LabelReview() {
           {url && <img src={url} alt="Photo du cartel" style={{ width: '100%', display: 'block', border: '1px solid var(--rule)', borderRadius: 'var(--radius-img)' }} />}
           <p className="t-small t-muted">
             {s.labelSource === 'ocr-local'
-              ? 'Texte lu sur votre téléphone par OCR, sans IA. Les champs sont devinés : corrigez-les avant de continuer.'
-              : 'Texte lu par l’IA. Relisez et corrigez si besoin : rien n’est enregistré sans votre validation.'}
+              ? 'Texte lu sur votre téléphone, sans connexion. Les champs sont devinés : corrigez-les avant de continuer.'
+              : 'Texte lu automatiquement. Relisez et corrigez si besoin : rien n’est enregistré sans votre validation.'}
           </p>
         </div>
         <form className="span-all md-span-5 lg-span-8 stack-16" onSubmit={(e) => (e.preventDefault(), search())}>
@@ -122,7 +124,7 @@ export function LabelReview() {
 
           <div className="row">
             <button className="btn" type="submit" disabled={searching}>
-              {searching ? <span className="spinner" /> : null} Rechercher l’œuvre dans les catalogues
+              {searching ? <span className="spinner" /> : null} Retrouver l’œuvre
             </button>
             <button
               type="button"
@@ -136,7 +138,7 @@ export function LabelReview() {
 
           {results && (
             <section className="stack-8" aria-label="Notices trouvées">
-              <h2 className="t-head">{results.length ? 'Notices trouvées' : 'Aucune notice trouvée'}</h2>
+              <h2 className="t-head">{results.length ? 'Œuvres possibles' : 'Aucune œuvre retrouvée'}</h2>
               <ul className="list-plain">
                 {results.map((r) => (
                   <li key={r.id} className="row-between">
@@ -156,6 +158,7 @@ export function LabelReview() {
             </section>
           )}
         </form>
+      </div>
       </div>
     </main>
   );

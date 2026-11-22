@@ -96,7 +96,7 @@ describe('API /api/identify', () => {
     expect(body.candidates[0].verified).toBe(false);
     expect(body.candidates[0].confidence).toBeLessThanOrEqual(0.55);
     expect(body.status).toBe('uncertain');
-    expect(body.warnings.join(' ')).toMatch(/pas vérifiée/);
+    expect(body.warnings.join(' ')).toMatch(/pas confirmée/);
   });
 
   it('signale une photo inexploitable', async () => {
@@ -138,7 +138,7 @@ describe('API /api/entry', () => {
     const tech = e.sections.find((s) => s.id === 'technique')!;
     expect(tech.claims[0].sources).toEqual(['fixture:aic-27992']);
     expect(e.inventory).toBe('1926.224');
-    expect(e.warnings.join(' ')).toMatch(/non sourcées/);
+    expect(e.warnings.join(' ')).toMatch(/À vérifier/);
   });
 
   it('se replie sur une fiche documentaire si l’IA échoue', async () => {
@@ -154,7 +154,7 @@ describe('API /api/entry', () => {
     const e = (await res.json()) as ArtworkEntry;
     expect(e.aiWritten).toBe(false);
     expect(e.technique).toBe('Oil on canvas');
-    expect(e.warnings.join(' ')).toMatch(/Rédaction par IA indisponible/);
+    expect(e.warnings.join(' ')).toMatch(/Rédaction automatique indisponible/);
   });
 });
 

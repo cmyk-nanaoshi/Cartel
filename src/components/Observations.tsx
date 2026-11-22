@@ -50,28 +50,24 @@ export function ObservationsSection(ctx: ObservationContext) {
 
       {items.map((o) => (
         <article key={o.id} className="obs-card">
-          <div className="row-between" style={{ alignItems: 'center' }}>
-            <span className="kind kind-place">{kindLabel(o.kind)}</span>
-            <span className="mono" style={{ color: 'var(--on-surface-2)' }}>{registerDate(o.date)}</span>
-          </div>
-          <div className="obs-name">{frTypo(o.placeName || kindLabel(o.kind))}</div>
-          <div className="obs-meta">{frTypo(obsDetail(o))}</div>
-          <div className="obs-foot">
-            <span className="obs-vis">
-              <Icon name={o.visibility === 'prive' ? 'lock' : 'globe'} size={14} />
-              {visibilityLabel(o)}
-            </span>
-            <button className="linkbtn" style={{ color: 'var(--on-surface)' }} onClick={() => setEditing(o)}>
+          <div className="row-between" style={{ alignItems: 'baseline' }}>
+            <div className="obs-name">{frTypo(o.placeName || kindLabel(o.kind))}</div>
+            <button className="linkbtn t-small" onClick={() => setEditing(o)}>
               Modifier
             </button>
           </div>
+          <div className="obs-meta">{frTypo([obsDetail(o), registerDate(o.date), kindLabel(o.kind)].filter(Boolean).join(' · '))}</div>
+          <span className="obs-vis t-small">
+            <Icon name={o.visibility === 'prive' ? 'lock' : 'globe'} size={14} />
+            {visibilityLabel(o)}
+          </span>
         </article>
       ))}
 
-      <button className="btn btn-ghost btn-block" onClick={() => setEditing('new')}>
-        <Icon name="plus" size={16} /> Ajouter un lieu où vous l’avez vue
+      <button className="btn btn-secondary btn-block" onClick={() => setEditing('new')}>
+        <Icon name="plus" size={20} /> Ajouter un lieu
       </button>
-      <p className="t-small t-faint">Chaque observation garde la date, le lieu et votre photo. Mises bout à bout, elles tracent le parcours de l’œuvre.</p>
+      <p className="t-small t-muted">Chaque lieu garde la date et votre photo. Mis bout à bout, les lieux tracent le parcours de l’œuvre.</p>
 
       {editing && <ObservationSheet ctx={ctx} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </section>
@@ -140,8 +136,8 @@ function ObservationSheet({ ctx, initial, onClose }: { ctx: ObservationContext; 
     const cityOnly = `«${NB}${kindLabel(o.kind)}, ${cityShown}${NB}»${isSale ? ', sans nom ni lot' : isPrivate ? '' : ' sans le nom du lieu'}`;
     return [
       { id: 'public' as Visibility, title: isPrivate ? 'Public, nom de la collection' : 'Public', desc: isPrivate && !o.isOwner ? 'Réservé au propriétaire' : full },
-      { id: 'public_ville' as Visibility, title: 'Public, ville seulement', desc: cityOnly },
-      { id: 'prive' as Visibility, title: 'Privé', desc: '' }
+      { id: 'public_ville' as Visibility, title: 'Ville seulement', desc: cityOnly },
+      { id: 'prive' as Visibility, title: 'Privé', desc: 'Vous seul' }
     ];
   }, [o.kind, o.isOwner, cityShown, isSale, isPrivate]);
 

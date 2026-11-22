@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { streamSSE } from 'hono/streaming';
 import type { ArtworkEntry, ChatRequest, EntryRequest, ServerConfig } from '../shared/types.js';
 import { loadConfig, type AppConfig } from './config.js';
@@ -36,6 +37,9 @@ export function createApp(deps: AppDeps = {}) {
   void store.counts().catch((e) => console.error('Base des fiches : initialisation impossible.', e?.message ?? e));
 
   const app = new Hono();
+
+  // L'administration vit à sa propre adresse : seule celle-ci est autorisée, et seulement sur l'API.
+  if (cfg.adminOrigin) app.use('/api/*', cors({ origin: cfg.adminOrigin, allowHeaders: ['content-type', 'x-admin-code', 'x-access-code'], allowMethods: ['GET', 'POST', 'DELETE'] }));
 
   app.onError((err, c) => {
     if (err instanceof InputError) return c.json({ error: err.message }, err.status as any);
@@ -207,7 +211,7 @@ export function createApp(deps: AppDeps = {}) {
     try {
       return c.json({ records: await aicRandom(sources.http, 12) });
     } catch (e: any) {
-      return c.json({ records: [], error: 'Découverte indisponible : ' + (e?.message ?? e) }, 502);
+      return c.json({ records: [], error: 'Tirage indisponible pour le moment.' }, 502);
     }
   });
 

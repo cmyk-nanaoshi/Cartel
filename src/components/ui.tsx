@@ -22,6 +22,14 @@ const paths: Record<string, ReactNode> = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6 6 18" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  share: <path d="M12 15V4m0 0L8 8m4-4 4 4M6 11H5v9h14v-9h-1" />,
+  camera: (
+    <>
+      <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
   back: <path d="M15 5l-7 7 7 7" />,
   image: (
     <>
@@ -283,7 +291,7 @@ export function WorkTile({
 export function DemoRibbon() {
   const { config } = useConfig();
   if (!config?.demo) return null;
-  return <div className="demo-ribbon">Mode démonstration : identification simulée, aucune IA connectée</div>;
+  return <div className="demo-ribbon">Mode démonstration : les résultats sont simulés</div>;
 }
 
 /** « Vers 1830 » après une virgule devient « vers 1830 » (sauf sigle ou nom propre en capitales). */

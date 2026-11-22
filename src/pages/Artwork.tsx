@@ -7,7 +7,8 @@ import { db, uid, type SavedArtwork } from '../lib/db';
 import { api, museumImg } from '../lib/api';
 import { frTypo } from '../../shared/typo';
 import { session } from '../lib/session';
-import { BackLink, Cartel, Icon, Notice, useToast } from '../components/ui';
+import { Cartel, Icon, Notice, useToast } from '../components/ui';
+import { TopBar } from '../components/Chrome';
 import { createPortal } from 'react-dom';
 import { t } from '../i18n';
 import { ObservationsSection } from '../components/Observations';
@@ -130,8 +131,9 @@ export function Artwork() {
 
   if (error && !entry)
     return (
-      <main className="page stack-16">
-        <BackLink />
+      <main>
+        <TopBar back="Retour" />
+        <div className="page stack-16">
         <Notice kind="error" title="Fiche indisponible">
           {error}
         </Notice>
@@ -140,16 +142,16 @@ export function Artwork() {
             Réessayer
           </button>
         )}
+        </div>
       </main>
     );
 
   if (!entry || loading)
     return (
       <main>
-        <div className="wall">
-          <div className="stage">{photoUrl ? <img src={photoUrl} alt="Votre photo" /> : null}</div>
-        </div>
-        <div className="page stack-16" aria-live="polite">
+        <TopBar back={state.fromScan ? 'Viseur' : 'Retour'} backTo={state.fromScan ? '/' : undefined} menu={false} />
+        <div className="page stack-16" aria-live="polite" style={{ paddingTop: 8 }}>
+          <figure className="photo-frame">{photoUrl ? <img src={photoUrl} alt="Votre photo" /> : null}</figure>
           {state.candidate && (
             <div>
               <div className="artist">{state.candidate.artist}</div>
@@ -157,8 +159,7 @@ export function Artwork() {
             </div>
           )}
           <p className="row t-muted">
-            <span className="spinner" /> Rédaction de la fiche à partir de {state.candidate?.records.length ?? 0} notice
-            {(state.candidate?.records.length ?? 0) > 1 ? 's' : ''} de musée…
+            <span className="spinner" /> Préparation de la fiche…
           </p>
         </div>
       </main>
@@ -178,77 +179,87 @@ export function Artwork() {
   const hasCartel = entry.sources.some((s) => s.source === 'cartel');
   const comparables = entry.comparables.filter((c) => c.imageUrl && !brokenComparables.has(c.sourceId));
 
+  const kindLabel = (c: { kind: Claim['kind']; unsourced?: boolean }) => (c.unsourced ? 'À vérifier' : KIND_LABEL[c.kind]);
+  const sourcesNote = entry.aiWritten
+    ? `Texte rédigé automatiquement à partir ${[hasCartel ? 'du cartel' : '', noticeCount ? `de ${noticeCount === 1 ? 'une notice' : `${noticeCount} notices`} de musée` : ''].filter(Boolean).join(' et ') || 'd’aucune source'}, le ${new Date(entry.generatedAt).toLocaleDateString('fr-FR')}. Les observations, interprétations et hypothèses ne sont vérifiées par aucune source.`
+    : 'Fiche construite à partir des champs du cartel et des notices, sans texte rédigé.';
+  async function share() {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: `${entry!.artist}, ${entry!.title}`, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        toast('Lien copié');
+      }
+    } catch {
+      /* partage annulé */
+    }
+  }
+
   return (
     <main>
-      <div className="wall">
-        <div className="stage">
-          {showPhoto ? (
-            <img src={photoUrl} alt="Votre photo de l’œuvre" />
-          ) : hasRepro ? (
-            <img src={museumImg(entry.imageUrl)} alt={`Reproduction : ${entry.title}`} onError={() => setReproBroken(true)} />
-          ) : (
-            <p style={{ color: 'var(--wall-ink-2)' }}>Pas de reproduction disponible.</p>
-          )}
-        </div>
-        <div className="stage-credit row-between">
-          <span>{showPhoto ? 'Votre photo' : hasRepro ? frTypo(entry.imageCredit ?? '') : ''}</span>
-          {hasRepro && photoUrl && (
-            <button className="linkbtn" style={{ color: 'var(--wall-ink)' }} onClick={() => setView(view === 'photo' ? 'repro' : 'photo')}>
-              {view === 'photo' ? 'Voir la reproduction du musée' : 'Revenir à ma photo'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="page">
-        <BackLink />
-        <div className="grid" style={{ marginTop: 8 }}>
-          <aside className="span-all lg-span-4 stack-16">
-            <Cartel entry={{ ...entry, artistBio }} saved={!!saved} />
-            {entry.verification?.status === 'validee' && (
-              <p className="verified">
-                <Icon name="check" size={16} /> Fiche vérifiée par Cartel
-              </p>
-            )}
-            <p className="t-small t-muted">{OBJECT_KIND_LABEL[entry.objectKind]}</p>
-            {saved && (
-              <div className="stack-8">
-                {saved.notes && <p className="reading" style={{ fontSize: 'var(--t-s)', lineHeight: 'var(--lh-s)' }}>« {saved.notes} »</p>}
-                {saved.tags.length > 0 && (
-                  <div className="chips">
-                    {saved.tags.map((tg) => (
-                      <Link className="chip" key={tg} to={`/collection?tag=${encodeURIComponent(tg)}`}>
-                        {tg}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-                <button className="btn btn-ghost btn-small" onClick={() => setEditing(true)}>
-                  Notes, tags et collections
+      <TopBar
+        back={state.fromScan ? 'Viseur' : 'Retour'}
+        backTo={state.fromScan ? '/' : undefined}
+        menu={false}
+        right={
+          <button type="button" className="iconbtn" aria-label="Partager" onClick={share}>
+            <Icon name="share" />
+          </button>
+        }
+      />
+      <div className="page" style={{ paddingTop: 8, paddingBottom: 24 }}>
+        <div className="grid">
+          <aside className="span-all lg-span-5">
+            <figure className={`photo-frame ${showPhoto ? '' : 'contain'}`}>
+              {showPhoto ? (
+                <img src={photoUrl} alt="Votre photo de l’œuvre" />
+              ) : hasRepro ? (
+                <img src={museumImg(entry.imageUrl)} alt={`Reproduction : ${entry.title}`} onError={() => setReproBroken(true)} />
+              ) : (
+                <p className="t-small" style={{ color: 'var(--wall-ink-2)' }}>Pas de reproduction disponible.</p>
+              )}
+            </figure>
+            <div className="photo-caption">
+              <span>{showPhoto ? `Votre photo${saved ? `, ${new Date(saved.createdAt).toLocaleDateString('fr-FR')}` : ''}` : hasRepro ? frTypo(entry.imageCredit ?? '') : ''}</span>
+              {hasRepro && photoUrl && (
+                <button className="linkbtn" onClick={() => setView(view === 'photo' ? 'repro' : 'photo')}>
+                  {view === 'photo' ? 'Voir la reproduction du musée' : 'Revenir à ma photo'}
                 </button>
-              </div>
-            )}
-            {label && (
-              <details className="t-small">
-                <summary style={{ cursor: 'pointer' }}>Cartel relevé sur place</summary>
-                <dl className="kv" style={{ marginTop: 8 }}>
-                  {Object.entries(label)
-                    .filter(([k, v]) => v && k in LABEL_FIELD_FR)
-                    .map(([k, v]) => (
-                      <div key={k} style={{ display: 'contents' }}>
-                        <dt>{LABEL_FIELD_FR[k]}</dt>
-                        <dd>{frTypo(String(v))}</dd>
-                      </div>
-                    ))}
-                </dl>
-              </details>
-            )}
+              )}
+            </div>
+            <div className="stack-12" style={{ marginTop: 16 }}>
+              <Cartel entry={{ ...entry, artistBio }} saved={!!saved} />
+              {hasCartel && <p className="state-ok t-small" style={{ marginTop: 12 }}>Confirmé par le cartel lu sur la photo</p>}
+              {entry.verification?.status === 'validee' && <p className="state-ok t-small" style={{ marginTop: 8 }}>Fiche vérifiée par Cartel</p>}
+              <p className="t-small t-muted" style={{ marginTop: 8 }}>{OBJECT_KIND_LABEL[entry.objectKind]}</p>
+              {saved && (
+                <div className="stack-8" style={{ marginTop: 16 }}>
+                  {saved.notes && <p className="reading" style={{ fontSize: 'var(--t-s)', lineHeight: 'var(--lh-s)' }}>« {saved.notes} »</p>}
+                  {saved.tags.length > 0 && (
+                    <div className="chips">
+                      {saved.tags.map((tg) => (
+                        <Link className="chip" key={tg} to={`/collection?tag=${encodeURIComponent(tg)}`}>
+                          {tg}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  <button className="btn btn-secondary btn-block" onClick={() => setEditing(true)}>
+                    Notes, tags et collections
+                  </button>
+                </div>
+              )}
+            </div>
           </aside>
 
-          <article className="span-all lg-span-7 lg-start-6 stack-24">
+          <article className="span-all lg-span-7 lg-start-6">
             {entry.warnings.map((w) => (
-              <Notice key={w}>{frTypo(w)}</Notice>
+              <div key={w} style={{ marginBottom: 16 }}>
+                <Notice>{frTypo(w)}</Notice>
+              </div>
             ))}
+            {entry.sections.length > 0 && (
             <div className="legend" aria-label="Légende">
               <span>
                 <sup className="legend-sup">1</sup> {KIND_HELP.fait.toLowerCase()}
@@ -263,35 +274,51 @@ export function Artwork() {
                 ))}
               {kindsUsed.has('unsourced') && (
                 <span>
-                  <span className="kind kind-unsourced">Non sourcé</span>
-                  donné comme un fait, sans source&nbsp;: à vérifier
+                  <span className="kind kind-unsourced">À vérifier</span>
+                  donné comme un fait, sans source
                 </span>
               )}
             </div>
+            )}
 
-            {entry.sections.length === 0 && <p className="t-muted">Aucune information vérifiable n’a pu être rassemblée pour cette œuvre.</p>}
+            {entry.sections.length === 0 && <p className="t-muted" style={{ marginTop: 24 }}>Aucune information vérifiable n’a pu être rassemblée pour cette œuvre.</p>}
 
             {entry.sections.map((s) => (
               <section key={s.id} className="entry-section">
                 <h2>{s.title}</h2>
                 <div className="reading measure">
                   {s.claims.map((c, i) => (
-                    <p key={i} className="claim">
-                      {c.kind !== 'fait' && (
-                        <span
-                          className={`kind ${c.unsourced ? 'kind-unsourced' : `kind-${c.kind}`}`}
-                          title={c.unsourced ? 'Présenté comme un fait par l’IA, mais sans source : à vérifier' : KIND_HELP[c.kind]}
-                        >
-                          {c.unsourced ? 'Non sourcé' : KIND_LABEL[c.kind]}
+                    <div key={i} className="claim">
+                      {(c.kind !== 'fait' || c.unsourced) && (
+                        <span className={`kind ${c.unsourced ? 'kind-unsourced' : `kind-${c.kind}`}`} title={c.unsourced ? 'Présenté comme un fait, mais sans source : à vérifier' : KIND_HELP[c.kind]}>
+                          {kindLabel(c)}
                         </span>
                       )}
-                      {frTypo(c.text)}
-                      <Refs ids={c.sources.filter((sid) => srcIndex.has(sid)).map((sid) => srcIndex.get(sid)!)} />
-                    </p>
+                      <p>
+                        {frTypo(c.text)}
+                        <Refs ids={c.sources.filter((sid) => srcIndex.has(sid)).map((sid) => srcIndex.get(sid)!)} />
+                      </p>
+                    </div>
                   ))}
                 </div>
               </section>
             ))}
+
+            {label && (
+              <details className="disclosure" style={{ marginTop: 24 }}>
+                <summary>Cartel relevé sur place</summary>
+                <dl className="kv">
+                  {Object.entries(label)
+                    .filter(([k, v]) => v && k in LABEL_FIELD_FR)
+                    .map(([k, v]) => (
+                      <div key={k} style={{ display: 'contents' }}>
+                        <dt>{LABEL_FIELD_FR[k]}</dt>
+                        <dd>{frTypo(String(v))}</dd>
+                      </div>
+                    ))}
+                </dl>
+              </details>
+            )}
 
             <ObservationsSection
               artworkKey={key}
@@ -315,28 +342,22 @@ export function Artwork() {
                             {s.sourceLabel}
                           </a>
                         ) : (
-                          <strong style={{ fontWeight: 650 }}>{s.sourceLabel}</strong>
+                          <span>{s.source === 'cartel' ? 'Cartel photographié' : s.sourceLabel}</span>
                         )}
                         {frTypo(`${s.title ? `, « ${s.title} »` : ''}${s.inventory ? `, inv. ${s.inventory}` : ''}`)}
                         {s.source === 'cartel' && s.institution ? frTypo(`, ${s.institution}`) : ''}
-                        {s.source === 'cartel' ? <span className="t-faint"> Fait foi pour l’exemplaire photographié.</span> : null}
-                        {s.imageLicense ? <span className="t-faint"> {frTypo(`Image : ${s.imageLicense}.`)}</span> : null}
+                        {s.source === 'cartel' ? '. Fait foi pour l’exemplaire photographié.' : '.'}
+                        {s.imageLicense ? frTypo(` Image : ${s.imageLicense}.`) : null}
                       </span>
                     </li>
                   ))}
                 </ol>
               ) : (
-                <p className="t-small t-muted">Aucune notice de musée n’a été trouvée. Le contenu de cette fiche n’est pas vérifié.</p>
+                <p className="t-small t-muted">Le contenu de cette fiche n’est vérifié par aucune source.</p>
               )}
-              <p className="t-small t-faint" style={{ marginTop: 12 }}>
-                {frTypo(
-                  entry.aiWritten
-                    ? `Texte rédigé par ${entry.model} à partir ${[hasCartel ? 'du cartel' : '', noticeCount ? `de ${noticeCount} notice${noticeCount > 1 ? 's' : ''} de musée` : ''].filter(Boolean).join(' et ') || 'd’aucune source'}, le ${new Date(entry.generatedAt).toLocaleDateString('fr-FR')}. Les observations, interprétations et hypothèses ne sont pas vérifiées par une source.`
-                    : 'Fiche construite à partir des champs du cartel et des notices, sans rédaction par IA.'
-                )}
-              </p>
+              <p className="t-small t-muted" style={{ marginTop: 12 }}>{frTypo(sourcesNote)}</p>
               {entry.verification && (
-                <button className="linkbtn" style={{ marginTop: 12 }} onClick={() => setReporting(true)}>
+                <button className="btn-discreet" style={{ marginTop: 4 }} onClick={() => setReporting(true)}>
                   Signaler une erreur dans cette fiche
                 </button>
               )}
@@ -344,22 +365,17 @@ export function Artwork() {
 
             {/* Une suggestion sans image est contre-productive : seules les œuvres dont l'image s'affiche restent. */}
             {comparables.length > 0 && (
-              <section className="entry-section stack-16">
+              <section className="entry-section">
                 <h2>{t('entry.comparables')}</h2>
                 <div className="comparables">
                   {comparables.map((c) => (
                     <a key={c.sourceId} href={c.url} target="_blank" rel="noreferrer" className="work" style={{ gridColumn: 'auto' }}>
                       <div className="work-frame">
-                        <img
-                          src={museumImg(c.imageUrl)}
-                          alt=""
-                          loading="lazy"
-                          onError={() => setBrokenComparables((b) => new Set(b).add(c.sourceId))}
-                        />
+                        <img src={museumImg(c.imageUrl)} alt="" loading="lazy" onError={() => setBrokenComparables((b) => new Set(b).add(c.sourceId))} />
                       </div>
                       <div className="work-label">
                         <span className="work-title">{frTypo(c.title)}</span>
-                        {c.date && <span className="t-muted">{c.date}</span>}
+                        {c.date && <span className="mono">{c.date}</span>}
                       </div>
                     </a>
                   ))}
@@ -371,18 +387,18 @@ export function Artwork() {
       </div>
 
       <div className="actionbar">
+        <Link className="btn btn-block" to={`/oeuvre/${encodeURIComponent(key)}/questions`} state={{ entry }}>
+          {t('entry.ask')}
+        </Link>
         {saved ? (
-          <button className="btn btn-ghost" onClick={remove}>
+          <button className="btn btn-secondary btn-block" onClick={remove}>
             {t('entry.saved')}
           </button>
         ) : (
-          <button className="btn btn-ghost" onClick={save}>
+          <button className="btn btn-secondary btn-block" onClick={save}>
             {t('entry.save')}
           </button>
         )}
-        <Link className="btn" to={`/oeuvre/${encodeURIComponent(key)}/questions`} state={{ entry }}>
-          {t('entry.ask')}
-        </Link>
       </div>
 
       {editing && saved && <EditSheet item={saved} onClose={() => setEditing(false)} />}

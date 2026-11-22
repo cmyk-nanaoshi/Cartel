@@ -3,7 +3,8 @@ import { useLocation, useParams } from 'react-router-dom';
 import type { ArtworkEntry, ChatMessage } from '../../shared/types';
 import { db } from '../lib/db';
 import { api } from '../lib/api';
-import { BackLink, Icon, Notice } from '../components/ui';
+import { Notice } from '../components/ui';
+import { TopBar } from '../components/Chrome';
 
 const SUGGESTIONS = [
   'Pourquoi cette œuvre est-elle importante ?',
@@ -79,35 +80,41 @@ export function Chat() {
 
   if (!entry)
     return (
-      <main className="page">
-        <BackLink />
-        <p>Fiche introuvable. Ouvrez d’abord la fiche de l’œuvre.</p>
+      <main>
+        <TopBar back="Retour" />
+        <div className="page">
+          <p>Fiche introuvable. Ouvrez d’abord la fiche de l’œuvre.</p>
+        </div>
       </main>
     );
 
   return (
     <main className="chat">
-      <header className="chat-head row-between">
-        <div>
-          <BackLink to={`/oeuvre/${encodeURIComponent(key)}`} label="Fiche" />
-          <div className="t-small">
-            <span className="artist">{entry.artist}</span>, <span className="work-title">{entry.title}</span>
-          </div>
+      <div>
+        <TopBar
+          back="Fiche"
+          backTo={`/oeuvre/${encodeURIComponent(key)}`}
+          menu={false}
+          right={
+            messages.length > 0 ? (
+              <button className="btn-discreet t-small" style={{ marginRight: 12 }} onClick={clear}>
+                Effacer
+              </button>
+            ) : null
+          }
+        />
+        <div style={{ padding: '0 var(--margin) 8px' }}>
+          <h1 className="t-display">Questions sur l’œuvre</h1>
+          <p className="t-small t-muted" style={{ marginTop: 4 }}>
+            {entry.artist}, {entry.title}
+          </p>
         </div>
-        {messages.length > 0 && (
-          <button className="linkbtn t-small" onClick={clear}>
-            Effacer
-          </button>
-        )}
-      </header>
+      </div>
 
       <div className="chat-log" ref={logRef} aria-live="polite">
         {messages.length === 0 && (
-          <div className="stack-16">
-            <p className="t-muted measure">
-              Posez une question sur cette œuvre. Les réponses s’appuient sur la fiche et ses {entry.sources.length} notice
-              {entry.sources.length > 1 ? 's' : ''}, citées entre crochets, et signalent ce qui est incertain.
-            </p>
+          <div>
+            <h2 className="rubric">Pour commencer</h2>
             <div className="suggestions">
               {SUGGESTIONS.map((s) => (
                 <button key={s} className="chip" onClick={() => ask(s)}>
@@ -115,6 +122,9 @@ export function Chat() {
                 </button>
               ))}
             </div>
+            <p className="t-small t-muted measure" style={{ marginTop: 24 }}>
+              Les réponses s’appuient sur la fiche et ses sources. Ce qui n’en vient pas porte une étiquette, comme sur la fiche.
+            </p>
           </div>
         )}
         {messages.map((m, i) => (
@@ -122,6 +132,20 @@ export function Chat() {
             {m.content || (streaming && i === messages.length - 1 ? <span className="spinner" aria-label="Réponse en cours" /> : null)}
           </div>
         ))}
+        {messages.length > 0 && !streaming && SUGGESTIONS.filter((q) => !messages.some((m) => m.content === q)).length > 0 && (
+          <div style={{ marginTop: 32 }}>
+            <h2 className="rubric">Pour continuer</h2>
+            <div className="suggestions">
+              {SUGGESTIONS.filter((q) => !messages.some((m) => m.content === q))
+                .slice(0, 2)
+                .map((q) => (
+                  <button key={q} className="chip" onClick={() => ask(q)}>
+                    {q}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
         {error && (
           <div style={{ marginTop: 16 }}>
             <Notice kind="error">{error}</Notice>
@@ -153,8 +177,8 @@ export function Chat() {
             }
           }}
         />
-        <button className="btn" type="submit" disabled={streaming || !input.trim()} aria-label="Envoyer">
-          <Icon name="send" size={20} />
+        <button className="btn" type="submit" disabled={streaming || !input.trim()}>
+          Envoyer
         </button>
       </form>
     </main>

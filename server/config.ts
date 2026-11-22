@@ -60,6 +60,8 @@ export function loadConfig() {
     },
     accessCode: str('APP_ACCESS_CODE'),
     adminCode: str('ADMIN_CODE'),
+    // Adresse de l'app d'administration (servie à part) autorisée à appeler l'API depuis un autre domaine.
+    adminOrigin: str('ADMIN_ORIGIN'),
     databaseUrl: str('DATABASE_URL'),
     cacheDir: str('CACHE_DIR', '.cache'),
     port: num('PORT', 8787)

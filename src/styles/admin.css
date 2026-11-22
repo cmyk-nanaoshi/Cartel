@@ -1,0 +1,20 @@
+/* Administration (ordinateur) : grille de 12 colonnes, marges 40 px, gouttières 24 px, barre de 72 px. */
+.admin { --m: 40px; --g: 24px; min-height: 100dvh; background: var(--paper); color: var(--ink); }
+.admin-bar { display: flex; align-items: center; gap: 16px; height: 72px; padding: 0 var(--m); border-bottom: 1px solid var(--rule); }
+.admin-bar .tb-logo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 24px; letter-spacing: -0.01em; }
+.admin-login { background: var(--soft); }
+.admin-card { width: min(437px, calc(100vw - 2 * var(--m))); margin: calc(50dvh - 72px - 160px) auto 0; padding: 32px; background: var(--surface); color: var(--on-surface); border-radius: var(--radius-card); }
+.admin-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--g); padding: 0 var(--m); height: calc(100dvh - 72px); }
+.admin-list { grid-column: 1 / span 4; overflow-y: auto; padding: 24px 0 32px; border-right: 1px solid var(--rule); margin-right: calc(var(--g) / -2); padding-right: calc(var(--g) / 2); }
+.admin-list > * + * { margin-top: 16px; }
+.admin-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; width: calc(100% + 24px); margin-left: -12px; padding: 8px 12px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: var(--radius-thumb); }
+.admin-row[aria-current='true'], .admin-row:hover { background: var(--soft); }
+.admin-thumb { width: 64px; height: 64px; object-fit: cover; background: var(--wall); border-radius: var(--radius-thumb); }
+.admin-detail { grid-column: 5 / span 8; display: grid; grid-template-rows: 1fr auto; min-height: 0; }
+.admin-scroll { overflow-y: auto; padding: 24px 0 32px; }
+.admin-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--g); margin-top: 24px; }
+.admin-repro { width: 100%; height: auto; border-radius: var(--radius-img); }
+.admin-actions { border-top: 1px solid var(--rule); padding: 16px 0 24px; background: var(--paper); }
+.admin-actions-row { display: flex; align-items: center; gap: var(--g); margin-bottom: 8px; }
+.admin-actions-row .btn { min-width: calc((100% - 7 * var(--g)) / 8 * 2 + var(--g)); }
+.admin-login .admin-bar { background: var(--paper); }

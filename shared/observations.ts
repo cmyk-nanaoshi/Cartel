@@ -73,9 +73,9 @@ export function publicView(o: Observation): Record<string, string | boolean> | n
 
 /** Libellé affiché sur la fiche pour le niveau choisi. */
 export function visibilityLabel(o: Observation): string {
-  if (o.visibility === 'prive') return 'Privée';
-  if (o.visibility === 'public_ville') return 'Publique, ville seulement';
-  return 'Publique';
+  if (o.visibility === 'prive') return 'Privé : vous seul';
+  if (o.visibility === 'public_ville') return 'Visible par tous : ville seulement';
+  return 'Visible par tous';
 }
 
 /** 2026-10-29 devient 29.10.2026, à la manière d'un registre. */
