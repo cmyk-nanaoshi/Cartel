@@ -553,3 +553,18 @@ body { background: var(--paper); color: var(--ink); }
 .stack-12 > * + * { margin-top: 12px; }
 .btn.btn-wall { background: var(--white); color: var(--green); border-color: var(--white); }
 .welcome .photo { aspect-ratio: auto; height: min(42dvh, 420px); }
+
+/* Transitions de page : l'écran arrive de droite en avançant, de gauche en revenant (Figma : Push, 300 ms). */
+/* Une transformation rend « fixed » relatif à la page animée : les écrans plein cadre (viseur, carte) n'ont qu'un fondu. */
+.route-view:has(.scan-screen, .map-wrap).enter-push, .route-view:has(.scan-screen, .map-wrap).enter-pop { animation: fade-in 200ms ease-out; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.route-view.enter-push { animation: enter-from-right 300ms cubic-bezier(0.2, 0, 0, 1); }
+.route-view.enter-pop { animation: enter-from-left 300ms cubic-bezier(0.2, 0, 0, 1); }
+@keyframes enter-from-right { from { transform: translate3d(32px, 0, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes enter-from-left { from { transform: translate3d(-32px, 0, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Les feuilles montent depuis le bas. */
+.sheet-body { animation: sheet-in 250ms cubic-bezier(0.2, 0, 0, 1); }
+@keyframes sheet-in { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .route-view.enter-push, .route-view.enter-pop, .sheet-body { animation: none; }
+}
