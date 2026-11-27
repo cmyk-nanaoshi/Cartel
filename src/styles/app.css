@@ -2,7 +2,7 @@
   Cartel, système visuel
   Grille : 4 colonnes (mobile), 8 (tablette), 12 (bureau). Marges 20/32/48 px, gouttières 16/24 px.
   Ligne de base : 4 px ; toutes les hauteurs de ligne et marges verticales en sont des multiples (8, 12, 16, 24, 32…).
-  Typographie : Schibsted Grotesk (interface, cartels), Spectral (titres d'œuvres, lecture longue),
+  Typographie : IBM Plex Sans (interface, cartels), Spectral (titres d'œuvres, lecture longue),
   IBM Plex Mono (cotes : inventaire, dimensions, rubriques, renvois aux sources), comme un registre d'inventaire.
   Arrondis : 2 px pour les champs, 4 px pour les petites vignettes de liste, 8 px pour le cartel, les étiquettes
   et les images d'œuvres, 12 px pour les boutons.
@@ -48,7 +48,7 @@
   --icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7.5v5.5M12 16.5v.01'/%3E%3C/svg%3E");
   --focus: var(--ink);
 
-  --sans: 'Schibsted Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
+  --sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
   --serif: 'Spectral', Georgia, 'Times New Roman', serif;
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   /* Échelle « Doux » validée le 22.11.2026 (variables Figma « Dimensions »). */
@@ -60,7 +60,7 @@
   --segment-pad: 4px;
   --radius-segment: calc(var(--radius-btn) - var(--segment-pad)); /* concentrique avec le contrôle */
 
-  --t-xs: 13px;   --lh-xs: 20px;
+  --t-xs: 12px;   --lh-xs: 16px;
   --t-s: 15px;    --lh-s: 24px;
   --t-m: 17px;    --lh-m: 28px;
   --t-l: 21px;    --lh-l: 28px;
@@ -146,8 +146,8 @@ html, body { overflow-x: clip; }
 
 /* ---------- Typographie ---------- */
 h1, h2, h3, p { margin: 0; }
-.t-display { font-size: var(--t-xxl); line-height: var(--lh-xxl); font-weight: 650; letter-spacing: -0.015em; }
-.t-title { font-size: var(--t-xl); line-height: var(--lh-xl); font-weight: 650; letter-spacing: -0.01em; }
+.t-display { font-size: var(--t-xxl); line-height: var(--lh-xxl); font-weight: 700; letter-spacing: -0.01em; }
+.t-title { font-size: var(--t-xl); line-height: var(--lh-xl); font-weight: 700; letter-spacing: -0.01em; }
 .t-head { font-size: var(--t-l); line-height: var(--lh-l); font-weight: 600; }
 .t-body { font-size: var(--t-s); line-height: var(--lh-s); }
 .t-small { font-size: var(--t-xs); line-height: var(--lh-xs); }
@@ -157,7 +157,7 @@ h1, h2, h3, p { margin: 0; }
 .reading p + p { margin-top: 12px; }
 .work-title { font-family: var(--serif); font-style: italic; font-weight: 500; }
 .mono { font-family: var(--mono); font-size: 12px; }
-.artist { font-weight: 650; }
+.artist { font-weight: 600; }
 .num { font-variant-numeric: tabular-nums; }
 
 /* ---------- En-tête de page ---------- */
@@ -205,7 +205,7 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- Barre d'onglets ---------- */
 .tabbar { position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(5, 1fr); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--rule); }
-.tabbar a { display: grid; justify-items: center; align-content: center; gap: 2px; text-decoration: none; color: var(--ink-3); font-size: 11px; line-height: 16px; font-weight: 600; }
+.tabbar a { display: grid; justify-items: center; align-content: center; gap: 2px; text-decoration: none; color: var(--ink-3); font-size: 12px; line-height: 16px; font-weight: 600; }
 .tabbar a.active { color: var(--ink); }
 .tabbar a.scan { color: var(--paper); }
 .tabbar a.scan .scan-disc { display: grid; place-items: center; width: 52px; height: 52px; margin-top: -20px; border-radius: 50%; background: var(--ink); color: var(--paper); box-shadow: 0 0 0 4px var(--paper); }
@@ -259,7 +259,7 @@ h1, h2, h3, p { margin: 0; }
 .candidate { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--rule); }
 .candidate:last-child { border-bottom: 1px solid var(--rule); }
 .candidate-img { width: 96px; aspect-ratio: 4 / 5; background: var(--wall); object-fit: cover; border-radius: var(--radius-img); }
-.candidate-img.placeholder { display: grid; place-items: center; color: var(--wall-ink-2); font-size: 11px; text-align: center; padding: 8px; }
+.candidate-img.placeholder { display: grid; place-items: center; color: var(--wall-ink-2); font-size: 12px; text-align: center; padding: 8px; }
 .signals { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; font-size: var(--t-xs); line-height: var(--lh-xs); color: var(--ink-2); margin: 8px 0 0; }
 .signals dt { color: var(--ink-3); }
 .signals dd { margin: 0; }
@@ -269,7 +269,7 @@ h1, h2, h3, p { margin: 0; }
 .entry-section h2 { font-family: var(--mono); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 12px; }
 .claim { margin: 0; }
 .claim + .claim { margin-top: 12px; }
-.kind { display: inline-block; font-family: var(--mono); font-size: 11px; line-height: 16px; font-weight: 500; padding: 0 6px; border: 1px solid transparent; border-radius: 8px; margin-right: 6px; vertical-align: 2px; white-space: nowrap; }
+.kind { display: inline-block; font-family: var(--mono); font-size: 12px; line-height: 16px; font-weight: 500; padding: 0 6px; border: 1px solid transparent; border-radius: 8px; margin-right: 6px; vertical-align: 2px; white-space: nowrap; }
 .kind-observation { border-color: var(--ink-3); color: var(--ink-2); }
 .kind-interpretation { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink-2); }
 .kind-hypothese { border: 1px dashed var(--ink-3); color: var(--ink-2); }
@@ -277,9 +277,9 @@ h1, h2, h3, p { margin: 0; }
 .kind-unsourced::before { content: ''; display: inline-block; width: 11px; height: 11px; margin-right: 3px; vertical-align: -1px; background: currentColor; -webkit-mask: var(--icon-alert) center / contain no-repeat; mask: var(--icon-alert) center / contain no-repeat; }
 /* Appels de note : line-height nul pour ne pas écarter la ligne qui les porte (ligne de base de 4 px). */
 sup { line-height: 0; }
-.refs { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--brass); margin-left: 1px; white-space: nowrap; }
+.refs { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--brass); margin-left: 1px; white-space: nowrap; }
 .refs a { color: inherit; text-decoration: none; }
-.legend-sup { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--brass); }
+.legend-sup { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--brass); }
 .sources-list { list-style: none; margin: 0; padding: 0; counter-reset: s; }
 .sources-list li { display: grid; grid-template-columns: 32px 1fr; padding: 8px 0; border-top: 1px solid var(--rule); font-size: var(--t-xs); line-height: var(--lh-xs); }
 .sources-list li:target { background: color-mix(in srgb, var(--brass) 12%, transparent); }
@@ -381,7 +381,7 @@ fieldset > legend { margin-bottom: 8px; }
 /* ---------- Observations (lieux où l'œuvre a été vue) ---------- */
 .obs-card { background: var(--surface); color: var(--on-surface); border-radius: var(--radius-card); border: 1px solid var(--surface-rule); padding: 16px 20px; display: grid; gap: 4px; }
 .obs-card .kind-place { border-color: var(--on-surface); color: var(--on-surface); margin-right: 0; }
-.obs-name { font-weight: 650; font-size: var(--t-m); line-height: var(--lh-m); margin-top: 4px; }
+.obs-name { font-weight: 600; font-size: var(--t-m); line-height: var(--lh-m); margin-top: 4px; }
 .obs-meta { font-size: var(--t-xs); line-height: var(--lh-xs); color: var(--on-surface-2); }
 .obs-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--surface-rule); font-size: var(--t-xs); line-height: var(--lh-xs); }
 .obs-vis { display: inline-flex; align-items: center; gap: 6px; color: var(--on-surface-2); }
@@ -405,7 +405,7 @@ fieldset > legend { margin-bottom: 8px; }
 .admin-row:last-child { border-bottom: 1px solid var(--rule); }
 .admin-thumb { width: 64px; height: 80px; object-fit: cover; background: var(--wall); border-radius: var(--radius-thumb); }
 .admin-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.status-pill { display: inline-block; font-family: var(--mono); font-size: 11px; line-height: 16px; padding: 0 6px; border: 1px solid var(--ink-3); border-radius: 8px; color: var(--ink-2); }
+.status-pill { display: inline-block; font-family: var(--mono); font-size: 12px; line-height: 16px; padding: 0 6px; border: 1px solid var(--ink-3); border-radius: 8px; color: var(--ink-2); }
 .status-pill[data-s='validee'] { border-color: var(--ok); color: var(--ok); }
 .status-pill[data-s='rejetee'] { border-color: var(--warn); color: var(--warn); }
 .status-pill[data-s='validee']::before, .status-pill[data-s='rejetee']::before { content: ''; display: inline-block; width: 11px; height: 11px; margin-right: 3px; vertical-align: -1px; background: currentColor; -webkit-mask: var(--icon-ok) center / contain no-repeat; mask: var(--icon-ok) center / contain no-repeat; }
@@ -451,7 +451,7 @@ body { background: var(--paper); color: var(--ink); }
 .entry-section { border-top: 0; padding-top: 32px; }
 
 /* Étiquettes de nature d'affirmation */
-.kind { font-size: 11px; line-height: 16px; padding: 1px 6px; border: 1px solid var(--control); border-radius: var(--radius-tag); color: var(--ink-2); background: transparent; margin: 0 0 4px; vertical-align: baseline; }
+.kind { font-size: 12px; line-height: 16px; padding: 1px 6px; border: 1px solid var(--control); border-radius: var(--radius-tag); color: var(--ink-2); background: transparent; margin: 0 0 4px; vertical-align: baseline; }
 .claim .kind { display: table; }
 .kind-observation, .kind-interpretation, .kind-hypothese { border: 1px solid var(--control); background: transparent; color: var(--ink-2); }
 .kind-unsourced { border-color: var(--warn); color: var(--warn); }
@@ -487,7 +487,7 @@ body { background: var(--paper); color: var(--ink); }
 .scan-bottom { padding: 16px var(--margin) calc(16px + env(safe-area-inset-bottom)); }
 .shutter { border-color: var(--ink); width: 76px; height: 76px; }
 .shutter > i { background: var(--action); }
-.scan-side { color: var(--ink); font-weight: 600; font-size: 11px; line-height: 16px; text-decoration: none; }
+.scan-side { color: var(--ink); font-weight: 600; font-size: 12px; line-height: 16px; text-decoration: none; }
 .scan-side img, .scan-side .ph { width: 56px; height: 56px; object-fit: cover; border-radius: var(--radius-thumb); background: var(--soft); }
 
 /* Accueil (première ouverture) */
@@ -553,3 +553,18 @@ body { background: var(--paper); color: var(--ink); }
 .stack-12 > * + * { margin-top: 12px; }
 .btn.btn-wall { background: var(--white); color: var(--green); border-color: var(--white); }
 .welcome .photo { aspect-ratio: auto; height: min(42dvh, 420px); }
+
+/* Transitions de page : l'écran arrive de droite en avançant, de gauche en revenant (Figma : Push, 300 ms). */
+/* Une transformation rend « fixed » relatif à la page animée : les écrans plein cadre (viseur, carte) n'ont qu'un fondu. */
+.route-view:has(.scan-screen, .map-wrap).enter-push, .route-view:has(.scan-screen, .map-wrap).enter-pop { animation: fade-in 200ms ease-out; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.route-view.enter-push { animation: enter-from-right 300ms cubic-bezier(0.2, 0, 0, 1); }
+.route-view.enter-pop { animation: enter-from-left 300ms cubic-bezier(0.2, 0, 0, 1); }
+@keyframes enter-from-right { from { transform: translate3d(32px, 0, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes enter-from-left { from { transform: translate3d(-32px, 0, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Les feuilles montent depuis le bas. */
+.sheet-body { animation: sheet-in 250ms cubic-bezier(0.2, 0, 0, 1); }
+@keyframes sheet-in { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .route-view.enter-push, .route-view.enter-pop, .sheet-body { animation: none; }
+}

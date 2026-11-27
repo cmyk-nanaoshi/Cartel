@@ -14,6 +14,7 @@ import { Collection } from './pages/Collection';
 import { Search } from './pages/Search';
 import { Random } from './pages/Random';
 import { Profile } from './pages/Profile';
+import { RouteView, SheetDrag } from './components/Gestures';
 import { NotFound } from './pages/NotFound';
 
 // La carte (Leaflet) n'est chargée qu'à la demande.
@@ -37,6 +38,8 @@ export function App() {
           <div className="app">
             <DemoRibbon />
             <Suspense fallback={<div className="page t-muted">{t('common.loading')}</div>}>
+              <SheetDrag />
+              <RouteView>
               <Routes>
                 <Route path="/" element={<Start />} />
                 <Route path="/scanner" element={<Scan />} />
@@ -54,6 +57,7 @@ export function App() {
                 <Route path="/admin" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </RouteView>
             </Suspense>
           </div>
         </BrowserRouter>
