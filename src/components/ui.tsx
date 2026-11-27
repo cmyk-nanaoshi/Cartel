@@ -291,7 +291,7 @@ export function WorkTile({
 export function DemoRibbon() {
   const { config } = useConfig();
   if (!config?.demo) return null;
-  return <div className="demo-ribbon">Mode démonstration : les résultats sont simulés</div>;
+  return <aside className="demo-ribbon" aria-label="Mode démonstration">Mode démonstration : les résultats sont simulés</aside>;
 }
 
 /** « Vers 1830 » après une virgule devient « vers 1830 » (sauf sigle ou nom propre en capitales). */

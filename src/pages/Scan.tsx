@@ -102,7 +102,7 @@ export function Scan() {
   };
 
   return (
-    <div className="scan-screen">
+    <main className="scan-screen" aria-label="Viseur">
       <TopBar />
 
       <div className="viewfinder">
@@ -154,6 +154,6 @@ export function Scan() {
 
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} data-testid="file-input" />
       <input ref={captureRef} type="file" accept="image/*" capture="environment" hidden onChange={onFile} />
-    </div>
+    </main>
   );
 }
