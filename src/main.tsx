@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-// Typographie Cartel : Schibsted Grotesk (interface), Spectral (titres d'œuvres et lecture),
+// Typographie Cartel : IBM Plex Sans (interface), Spectral (titres d'œuvres et lecture),
 // IBM Plex Mono (cotes, rubriques, renvois aux sources).
-import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/ibm-plex-sans';
 import '@fontsource/spectral/400.css';
 import '@fontsource/spectral/400-italic.css';
 import '@fontsource/spectral/500.css';
