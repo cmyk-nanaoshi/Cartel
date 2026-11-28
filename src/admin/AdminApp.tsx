@@ -1,10 +1,11 @@
+import { LogoCourt } from '../components/Brand';
 import { useCallback, useEffect, useState } from 'react';
 import type { WorkStatus, WorkSummary } from '../../shared/types';
 import { frTypo } from '../../shared/typo';
 import { registerDate } from '../../shared/observations';
 import { admin, museumImg, type AdminCounts, type AdminWork } from '../lib/api';
 import { getSetting, setSetting } from '../lib/db';
-import { Cartel, ConfigProvider, Notice, SealMark, ToastProvider, useConfig, useToast } from '../components/ui';
+import { Cartel, ConfigProvider, Notice, ToastProvider, useConfig, useToast } from '../components/ui';
 
 // Administration des fiches partagées : une app à part, pour ordinateur, absente de la version publique.
 // Accès par le code ADMIN_CODE défini sur le serveur ; il reste enregistré sur cet ordinateur seulement.
@@ -25,8 +26,7 @@ function Bar({ onForget }: { onForget?: () => void }) {
   return (
     <header className="admin-bar">
       <span className="tb-logo">
-        <SealMark size={24} color="var(--seal)" />
-        <span>Cartel</span>
+        <LogoCourt size={18} />
       </span>
       <span className="t-muted">Administration des fiches</span>
       {onForget && (

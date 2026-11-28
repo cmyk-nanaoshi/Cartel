@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Cartel',
-        short_name: 'Cartel',
+        name: 'Artcol',
+        short_name: 'Artcol',
         description: 'Photographier une œuvre, comprendre son histoire, garder ses découvertes.',
         lang: 'fr',
         start_url: '/',

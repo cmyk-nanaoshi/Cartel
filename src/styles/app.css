@@ -590,3 +590,31 @@ body { background: var(--paper); color: var(--ink); }
 .check-row { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
 .check-row input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--action); }
 .field-legend { font-size: var(--t-xs); line-height: var(--lh-xs); font-weight: 600; margin-bottom: 4px; }
+
+/* ---------- Logo ARTCOL ---------- */
+:root { --logo-font: 'DM Serif Display', Georgia, serif; --logo-shadow: rgba(32, 43, 41, 0.28); --logo-mat: var(--white); --logo-frame: var(--green); --logo-light: #dde3e1; }
+.logo-grand { --t: calc(var(--s) * 0.08); display: inline-flex; gap: calc(var(--s) * 0.3); perspective: calc(var(--s) * 7.8 * 0.75); font-family: var(--logo-font); line-height: 1; }
+.lg-frame { display: block; width: var(--s); height: calc(var(--s) * 1.2); padding: var(--t); background: var(--logo-frame); box-shadow: calc(var(--s) * 0.06) calc(var(--s) * 0.1) calc(var(--s) * 0.18) var(--logo-shadow); transform-origin: 50% 50%; box-sizing: border-box; }
+.lg-mat { display: grid; place-items: center; width: 100%; height: 100%; background: var(--logo-mat); position: relative; }
+.lg-letter { font-size: calc(var(--s) * 0.78); color: var(--logo-frame); transform: translateY(0.04em); }
+.lg-carmin .lg-mat { background: var(--carmine); }
+.lg-carmin .lg-letter { color: var(--white); }
+.lg-fin { padding: calc(var(--t) * 0.35); }
+.lg-filet .lg-mat { box-shadow: inset 0 0 0 calc(var(--t) * 0.25) var(--logo-frame); }
+.lg-filet .lg-mat::before { content: ''; position: absolute; inset: calc(var(--t) * 0.6); border: max(1px, calc(var(--t) * 0.15)) solid var(--logo-frame); }
+.lg-caisse { background: var(--logo-light); }
+.lg-toile { background: var(--logo-mat); }
+.lg-epais { padding: calc(var(--t) * 1.8); }
+.logo-court { display: inline-flex; align-items: center; gap: calc(var(--s) * 0.28); font-family: var(--logo-font); line-height: 1; color: var(--ink); }
+.lc-a { display: grid; place-items: center; width: calc(var(--s) * 1.0); height: calc(var(--s) * 1.2); background: var(--carmine); color: var(--white); box-shadow: inset 0 0 0 max(1px, calc(var(--s) * 0.07)) var(--logo-frame); font-size: calc(var(--s) * 0.86); }
+.lc-rest { font-size: var(--s); letter-spacing: 0.14em; }
+/* Thème sombre : baguettes et lettres blanches sur le vert, pas d'ombre (le carmin reste entouré de blanc). */
+:root[data-theme='dark'] { --logo-shadow: transparent; --logo-mat: var(--green-deep); --logo-frame: var(--white); --logo-light: #5b6b67; }
+:root[data-theme='dark'] .lg-toile .lg-mat { background: var(--white); }
+:root[data-theme='dark'] .lg-toile .lg-letter { color: var(--green-deep); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --logo-shadow: transparent; --logo-mat: var(--green-deep); --logo-frame: var(--white); --logo-light: #5b6b67; }
+  :root:not([data-theme='light']) .lg-toile .lg-mat { background: var(--white); }
+  :root:not([data-theme='light']) .lg-toile .lg-letter { color: var(--green-deep); }
+}
+.welcome-logo { display: flex; justify-content: center; padding: 8px 0 4px; }

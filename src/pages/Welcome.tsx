@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { SealMark } from '../components/ui';
+import { LogoGrand } from '../components/Brand';
 import { setSetting } from '../lib/db';
 
 // Première ouverture (maquette « Bienvenue ») : dire ce que fait l'app avant de demander la caméra.
@@ -13,11 +13,10 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   }
   return (
     <main className="welcome">
-      <div className="tb-logo" aria-label="Cartel" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 28 }}>
-        <SealMark size={28} color="var(--seal)" />
-        <span>Cartel</span>
+      <div className="welcome-logo">
+        <LogoGrand size={40} />
       </div>
-      <h1 className="t-title">Photographiez une œuvre. Cartel vous dit ce que c’est et d’où cela vient.</h1>
+      <h1 className="t-title">Photographiez une œuvre. Artcol vous dit ce que c’est et d’où cela vient.</h1>
       <div className="photo">
         <img src="/accueil.jpg" alt="Une estampe de Hokusai accrochée au mur d’un musée, avec son cartel" />
       </div>

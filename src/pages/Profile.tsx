@@ -175,7 +175,7 @@ export function Profile() {
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={restore} />
 
           <p className="t-small t-faint" style={{ paddingTop: 16 }}>
-            Cartel 0.1. Données des notices : Joconde (Licence Ouverte), Wikidata (CC0), Art Institute of Chicago et Met (CC0). Fond de carte © OpenStreetMap.
+            Artcol 0.1. Données des notices : Joconde (Licence Ouverte), Wikidata (CC0), Art Institute of Chicago et Met (CC0). Fond de carte © OpenStreetMap.
           </p>
         </section>
       </div>

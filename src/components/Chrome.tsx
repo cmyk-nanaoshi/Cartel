@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Icon, SealMark } from './ui';
+import { Icon } from './ui';
+import { LogoCourt } from './Brand';
 
 // Navigation C2 (maquettes Figma) : la caméra d'abord, un menu en haut à droite.
 const ITEMS = [
@@ -12,9 +13,8 @@ const ITEMS = [
 
 export function Logo() {
   return (
-    <Link to="/" className="tb-logo" aria-label="Cartel, retour au viseur">
-      <SealMark size={22} color="var(--seal)" />
-      <span>Cartel</span>
+    <Link to="/" className="tb-logo" aria-label="Artcol, retour au viseur">
+      <LogoCourt size={17} />
     </Link>
   );
 }
