@@ -14,6 +14,8 @@ export interface SavedArtwork {
   collectionIds: string[];
   geo?: { lat: number; lon: number; accuracy?: number };
   label?: LabelFields;
+  takenAt?: number; // heure de prise de vue lue dans la photo importée ; sinon createdAt
+  exhibition?: string; // exposition choisie pour la visite
   createdAt: number;
   updatedAt: number;
 }

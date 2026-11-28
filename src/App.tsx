@@ -10,7 +10,7 @@ import { Results } from './pages/Results';
 import { LabelReview } from './pages/LabelReview';
 import { Artwork } from './pages/Artwork';
 import { Chat } from './pages/Chat';
-import { Collection } from './pages/Collection';
+import { Collection, ExhibitionPage, VisitPage } from './pages/Collection';
 import { Search } from './pages/Search';
 import { Random } from './pages/Random';
 import { Profile } from './pages/Profile';
@@ -49,6 +49,8 @@ export function App() {
                 <Route path="/oeuvre/:key" element={<Artwork />} />
                 <Route path="/oeuvre/:key/questions" element={<Chat />} />
                 <Route path="/collection" element={<Collection />} />
+                <Route path="/collection/visite/:id" element={<VisitPage />} />
+                <Route path="/collection/exposition/:name" element={<ExhibitionPage />} />
                 <Route path="/recherche" element={<Search />} />
                 <Route path="/hasard" element={<Random />} />
                 <Route path="/carte" element={<MapPage />} />
