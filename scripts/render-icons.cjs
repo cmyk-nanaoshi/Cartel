@@ -1,5 +1,7 @@
 // Génère les icônes de l'app (ARTCOL) à partir d'une seule source HTML/CSS :
-// le A sur fond carmin, dans son cadre vert, tourné vers le visiteur, sur fond blanc.
+// le A sur fond carmin, dans son cadre blanc, tourné vers le visiteur, sur fond vert foncé.
+// Fond foncé et opaque : l'icône reste lisible sur un écran d'accueil clair comme sombre
+// (iOS ne permet pas à une web app d'avoir une icône différente selon le mode).
 // Usage : node scripts/render-icons.cjs
 const { chromium } = require('playwright');
 const path = require('path');
@@ -8,10 +10,10 @@ const fs = require('fs');
 const font = path.resolve(__dirname, '../node_modules/@fontsource/dm-serif-display/files/dm-serif-display-latin-400-normal.woff2');
 const html = (size) => `<!doctype html><html><head><style>
 @font-face { font-family: 'DM Serif Display'; src: url('file://${font}') format('woff2'); }
-html, body { margin: 0; width: ${size}px; height: ${size}px; background: #ffffff; }
+html, body { margin: 0; width: ${size}px; height: ${size}px; background: #2c3b38; }
 .stage { width: 100%; height: 100%; display: grid; place-items: center; perspective: ${size * 1.6}px; }
 .frame { --s: ${size * 0.45}px; --t: calc(var(--s) * 0.08); width: var(--s); height: calc(var(--s) * 1.2); padding: var(--t); box-sizing: border-box;
-  background: #2c3b38; transform: rotateY(16deg); box-shadow: calc(var(--s) * 0.06) calc(var(--s) * 0.1) calc(var(--s) * 0.18) rgba(32, 43, 41, 0.28); }
+  background: #ffffff; transform: rotateY(16deg); box-shadow: calc(var(--s) * 0.06) calc(var(--s) * 0.1) calc(var(--s) * 0.18) rgba(0, 0, 0, 0.35); }
 .mat { width: 100%; height: 100%; background: #c91f37; display: grid; place-items: center; }
 .a { font-family: 'DM Serif Display'; font-size: calc(var(--s) * 0.78); line-height: 1; color: #ffffff; transform: translateY(0.04em); }
 </style></head><body><div class="stage"><div class="frame"><div class="mat"><span class="a">A</span></div></div></div></body></html>`;
